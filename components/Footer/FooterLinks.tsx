@@ -69,7 +69,7 @@ export  function FooterLinks() {
       </Container>
       <Container className={classes.afterFooter}>
         <Text c="dimmed" size="sm">
-          © 2025 Book. All rights reserved.
+          © 2025 Hall. All rights reserved.
         </Text>
 
         <Group gap={0} className={classes.social} justify="flex-end" wrap="nowrap">
