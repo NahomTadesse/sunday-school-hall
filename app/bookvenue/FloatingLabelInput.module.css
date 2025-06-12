@@ -32,6 +32,16 @@
     }
   }
   
+  .datePicker {
+    margin-top: "200dp";
+   height: '100dp';
+  }
+  
+  .custom-datepicker input {
+    height: 100%; /* Ensure the input field takes the full height */
+    padding: 10px; /* Adjust padding as needed */
+  }
+
   .input {
     &::placeholder {
       transition: color 150ms ease;

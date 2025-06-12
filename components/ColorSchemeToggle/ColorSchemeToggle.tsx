@@ -11,8 +11,8 @@ export function ColorSchemeToggle() {
   };
 
   return (
-    <ActionIcon onClick={toggleColorScheme} title="Toggle color scheme" size="lg">
-      {colorScheme === 'dark' ? <IconSun size={20} /> : <IconMoon size={20} />}
+    <ActionIcon onClick={toggleColorScheme} title="Toggle color scheme" size="lg" variant="transparent">
+      {colorScheme === 'dark' ? <IconSun  size={20} color='yellow' /> : <IconMoon size={20} />}
     </ActionIcon>
   );
 }
