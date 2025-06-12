@@ -2,6 +2,14 @@ import { IconChevronRight } from '@tabler/icons-react';
 import { Avatar, Group, Text, UnstyledButton } from '@mantine/core';
 import classes from './UserButton.module.css';
 
+import Cookies from 'js-cookie';
+
+const userDataString = Cookies.get('userData');
+const userData = userDataString ? JSON.parse(userDataString) : null; 
+console.log("hello",userData)
+
+
+
 export function UserButton() {
   return (
     <UnstyledButton className={classes.user}>
@@ -13,11 +21,13 @@ export function UserButton() {
 
         <div style={{ flex: 1 }}>
           <Text size="sm" fw={500}>
-          Nahom Tadesse
+          {userData && userData.username || 'Name'}
+          {/* ADMIN NAME */}
           </Text>
 
           <Text c="dimmed" size="xs">
-            nahom@email.com
+          {userData && userData.phoneNumber || 'number'}
+          {/* ADMIN PHONE */}
           </Text>
         </div>
 

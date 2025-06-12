@@ -10,8 +10,8 @@ import { usePathname } from 'next/navigation';
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
- 
-  const isLoginPage = pathname === '/' ; 
+  const isLoginPage = pathname === '/';
+  const isForgetPage = pathname === '/forgetpass';
 
   return (
     <html lang="en" {...mantineHtmlProps}>
@@ -25,11 +25,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <MantineProvider theme={theme}>
-          <div style={{ display: 'flex' }}>
+          <div style={{ display: 'flex', height: '100vh' }}>
             {/* Render Navbar only if not on the login page */}
-            {!isLoginPage && <NavbarNested />}
-            <main style={{ flexGrow: 1, padding: '20px' }}>
-              {children}
+            {!isLoginPage && !isForgetPage && <NavbarNested />}
+            <main style={{ flexGrow: 1, padding: '20px', overflowY: 'auto' }}>
+              {/* Set a max height for scrollable area */}
+              <div style={{ height: 'calc(100vh - 100px)', overflowY: 'auto' }}>
+                {children}
+              </div>
             </main>
           </div>
           <FooterLinks />

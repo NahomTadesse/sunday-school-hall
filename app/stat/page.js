@@ -1,88 +1,127 @@
+"use client";
+import { useEffect, useState } from 'react';
 import { IconArrowDownRight, IconArrowUpRight } from '@tabler/icons-react';
-import { Center, Group, Paper, RingProgress, SimpleGrid, Text } from '@mantine/core';
-// import { BarChart } from '@mantine/charts';
-import {StatsGrid} from './statGrid'
-import { PieChart, BarChart } from '@mantine/charts';
+import { Center, Group, Paper, RingProgress, SimpleGrid, Text,Loader } from '@mantine/core';
+import { Line } from 'react-chartjs-2';
+import { Chart as ChartJS, LineElement, CategoryScale, LinearScale, PointElement, Tooltip } from 'chart.js';
+import { StatsGrid } from './statGrid';
+
 const icons = {
   up: IconArrowUpRight,
   down: IconArrowDownRight,
 };
 
-const data = [
-  { label: 'Transactions', stats: '456,578', progress: 65, color: 'teal', icon: 'up' },
-  { label: 'Booked Venue', stats: '2,550', progress: 72, color: 'blue', icon: 'up' },
-  {
-    label: 'Users',
-    stats: '4,735',
-    progress: 52,
-    color: 'red',
-    icon: 'down',
-  },
-] ;
+ChartJS.register(LineElement, CategoryScale, LinearScale, PointElement);
 
-const BarChartData = [
-  { month: 'January', Smartphones: 1200, Laptops: 900, Tablets: 200 },
-  { month: 'February', Smartphones: 1900, Laptops: 1200, Tablets: 400 },
-  { month: 'March', Smartphones: 400, Laptops: 1000, Tablets: 200 },
-  { month: 'April', Smartphones: 1000, Laptops: 200, Tablets: 800 },
-  { month: 'May', Smartphones: 800, Laptops: 1400, Tablets: 1200 },
-  { month: 'June', Smartphones: 750, Laptops: 600, Tablets: 1000 },
-];
+const MyChart = ({ data }) => {
+  const chartData = {
+    labels: ['Total Bookings', 'Confirmed', 'Rejected', 'Pending', 'Member', 'Non-Member'],
+    datasets: [
+      {
+        label: 'Booking Summary',
+        data: [
+          data.totalBookings,
+          data.confirmedBookings,
+          data.rejectedBookings,
+          data.pendingBookings,
+          data.memberBookings,
+          data.nonMemberBookings,
+        ],
+        fill: false,
+        borderColor: 'rgb(75, 192, 192)',
+        tension: 0.1,
+      },
+    ],
+  };
+
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      y: {
+        beginAtZero: true,
+      },
+    },
+    plugins: {
+      tooltip: {
+        callbacks: {
+          label: (tooltipItem) => {
+            return `Value: ${tooltipItem.raw}`;
+          },
+        },
+      },
+    },
+  };
+
+  return <Line data={chartData} options={options} />;
+};
 
 export default function StatsRing() {
-  const stats = data.map((stat) => {
+  const [summaryData, setSummaryData] = useState({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSummary = async () => {
+      try {
+        const response = await fetch('https://hall-api.hohitebirhan.com/api/v1/book/booking-summary');
+        const data = await response.json();
+        setSummaryData(data);
+      } catch (error) {
+        console.error('Error fetching booking summary:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSummary();
+  }, []);
+
+  const stats = [
+    { label: 'Total Bookings', stats: summaryData.totalBookings || 0, progress: 100, color: 'teal', icon: 'up' },
+    { label: 'Confirmed Bookings', stats: summaryData.confirmedBookings || 0, progress: 0, color: 'blue', icon: 'up' },
+    { label: 'Rejected Bookings', stats: summaryData.rejectedBookings || 0, progress: 0, color: 'red', icon: 'down' },
+    { label: 'Pending Bookings', stats: summaryData.pendingBookings || 0, progress: 0, color: 'orange', icon: 'down' },
+    { label: 'Member Bookings', stats: summaryData.memberBookings || 0, progress: 0, color: 'purple', icon: 'up' },
+    { label: 'Non-Member Bookings', stats: summaryData.nonMemberBookings || 0, progress: 0, color: 'cyan', icon: 'down' },
+  ].map((stat) => {
     const Icon = icons[stat.icon];
     return (
-        <div style={{marginTop:45}}>
-
-
-      <Paper withBorder radius="md" p="xs" key={stat.label}>
-        <Group>
-          <RingProgress
-            size={80}
-            roundCaps
-            thickness={8}
-            sections={[{ value: stat.progress, color: stat.color }]}
-            label={
-              <Center>
-                <Icon size={20} stroke={1.5} />
-              </Center>
-            }
-          />
-
-          <div>
-            <Text c="dimmed" size="xs" tt="uppercase" fw={700}>
-              {stat.label}
-            </Text>
-            <Text fw={700} size="xl">
-              {stat.stats}
-            </Text>
-          </div>
-        </Group>
-      </Paper>
-
-   
-        </div>
+      <div style={{ marginTop: 45 }} key={stat.label}>
+        <Paper withBorder radius="md" p="xs">
+          <Group>
+            <RingProgress
+              size={80}
+              roundCaps
+              thickness={8}
+              sections={[{ value: stat.progress, color: stat.color }]}
+              label={
+                <Center>
+                  <Icon size={20} stroke={1.5} />
+                </Center>
+              }
+            />
+            <div>
+              <Text c="dimmed" size="xs" tt="uppercase" fw={700}>
+                {stat.label}
+              </Text>
+              <Text fw={700} size="xl">
+                {stat.stats}
+              </Text>
+            </div>
+          </Group>
+        </Paper>
+      </div>
     );
   });
 
-  return( 
-  <div>
-  <SimpleGrid cols={{ base: 1, sm: 3 }}>{stats}</SimpleGrid>
-  <StatsGrid/>
-  <StatsGrid/>
-  {/* <BarChart
-      h={300}
-      data={BarChartData}
-      dataKey="month"
-      type="percent"
-      series={[
-        { name: 'Smartphones', color: 'violet.6' },
-        { name: 'Laptops', color: 'blue.6' },
-        { name: 'Tablets', color: 'teal.6' },
-      ]}
-    /> */}
-  </div>
-  )
-
+  return (
+    <div>
+      <SimpleGrid cols={{ base: 1, sm: 3 }}>{stats}</SimpleGrid>
+      <StatsGrid />
+      <div style={{ width: '80%', height: '300px', marginLeft: 45 }}>
+        {!loading && <MyChart data={summaryData} />}
+        {loading && <Center style={{ height: '300px' }}><Loader /></Center>}
+      </div>
+    </div>
+  );
 }

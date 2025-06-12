@@ -1,117 +1,314 @@
+// "use client";
+// import {
+//   IconAdjustments,
+//   IconCalendarStats,
+//   IconFileAnalytics,
+//   IconGauge,
+//   IconLock,
+//   IconNotes,
+//   IconPresentationAnalytics,
+// } from '@tabler/icons-react';
+// import { Group, ScrollArea } from '@mantine/core';
+// import { LinksGroup } from '../NavbarLinksGroup/NavbarLinksGroup';
+// import { UserButton } from '../UserButton/UserButton';
+// import { ColorSchemeToggle } from '../ColorSchemeToggle/ColorSchemeToggle';
+// import Link from 'next/link'; // Import Link from Next.js
+// import classes from './NavbarNested.module.css';
+
+// const mockdata = [
+//   { label: 'Dashboard', icon: IconGauge, link: '/' },
+//   {
+//     label: 'Venue',
+//     icon: IconNotes,
+//     initiallyOpened: true,
+//     links: [
+//       { label: 'Book Venue', link: '/bookvenue' },
+//       { label: 'Venue Requests', link: '/booked' },
+//     ],
+//   },
+//   {
+//     label: 'Hall',
+//     icon: IconPresentationAnalytics,
+//     initiallyOpened: true,
+//     links: [
+//       { label: 'Create Hall', link: '/createHall' },
+//       { label: 'Hall List', link: '/hallList' },
+//     ],
+//   },
+//   {
+//     label: 'Terms',
+//     icon: IconPresentationAnalytics,
+//     initiallyOpened: true,
+//     links: [
+//       { label: 'Create Term', link: '/termCreate' },
+//       { label: 'Term List', link: '/stat' },
+//     ],
+//   },
+//   {
+//     label: 'Analytics',
+//     icon: IconPresentationAnalytics,
+//     initiallyOpened: true,
+//     links: [
+//       { label: 'Overall Stat', link: '/stat' },
+//       { label: 'Monthly Stat', link: '/stat' },
+//       { label: 'Yearly Stat', link: '/stat' },
+//     ],
+//   },
+//   {
+//     label: 'Register',
+//     icon: IconFileAnalytics,
+//     initiallyOpened: true,
+//     links: [
+//       { label: 'Register Admin', link: '/registerAdmin' },
+//       { label: 'Admins List', link: '/adminList' },
+//     ],
+//   },
+//   {
+//     label: 'Settings',
+//     icon: IconLock,
+//     initiallyOpened: true,
+//     links: [
+//       { label: 'Set Price', link: '/mapDaysPrice' },
+//       { label: 'Members Discount', link: '/membersDiscount' },
+//     ],
+//   },
+//   {
+//     label: 'Reports',
+//     icon: IconPresentationAnalytics,
+//     initiallyOpened: true,
+//     links: [
+//       { label: 'Overall Report', link: '/reportOverall' },
+//       { label: 'Monthly Report', link: '/reportMonthly' },
+//       { label: 'Customer Report', link: '/reportCustomer' },
+//     ],
+//   },
+//   {
+//     label: 'Security',
+//     icon: IconLock,
+//     initiallyOpened: true,
+//     links: [
+//       { label: 'Change password', link: '/forgetpass' },
+//       { label: 'Recovery codes', link: '/' },
+//     ],
+//   },
+// ];
+
+// export function NavbarNested() {
+//   return (
+//     <nav className={classes.navbar}>
+//       <div className={classes.header}>
+//         <Group justify="space-between">
+//           <div>Book Dashboard</div>
+//           <ColorSchemeToggle />
+//         </Group>
+//       </div>
+
+//       <ScrollArea className={classes.links}>
+//         <div className={classes.linksInner}>
+//           {mockdata.map((item) => (
+//             <div key={item.label}>
+//               <div className={classes.linkHeader}>
+//                 <item.icon />
+//                 {item.label}
+//               </div>
+//               {item.links && item.links.map((link) => (
+//                 <Link href={link.link} key={link.label} passHref>
+//                   <div className={classes.linkItem}>
+//                     {link.label}
+//                   </div>
+//                 </Link>
+//               ))}
+//             </div>
+//           ))}
+//         </div>
+//       </ScrollArea>
+
+//       <div className={classes.footer}>
+//         <UserButton />
+//       </div>
+//     </nav>
+//   );
+// }
+
+
+"use client";
 import {
-    IconAdjustments,
-    IconCalendarStats,
-    IconFileAnalytics,
-    IconGauge,
-    IconLock,
-    IconNotes,
-    IconPresentationAnalytics,
-  } from '@tabler/icons-react';
-  import { Code, Group, ScrollArea } from '@mantine/core';
-  import { LinksGroup } from '../NavbarLinksGroup/NavbarLinksGroup';
-  import { UserButton } from '../UserButton/UserButton';
-  import { Logo } from './Logo';
+  IconAdjustments,
+  IconFileAnalytics,
+  IconGauge,
+  IconLock,
+  IconNotes,
+  IconPresentationAnalytics,
+} from '@tabler/icons-react';
+import { Group, ScrollArea, Collapse } from '@mantine/core';
+import { UserButton } from '../UserButton/UserButton';
+import { ColorSchemeToggle } from '../ColorSchemeToggle/ColorSchemeToggle';
+import Link from 'next/link'; // Import Link from Next.js
+import { useState } from 'react';
+import classes from './NavbarNested.module.css';
 
-  import { ColorSchemeToggle } from '../ColorSchemeToggle/ColorSchemeToggle'
-  
-  import classes from './NavbarNested.module.css';
-  
-  const mockdata = [
-    { label: 'Dashboard', icon: IconGauge },
-    {
-      label: 'Venue',
-      icon: IconNotes,
-      initiallyOpened: true,
-      links: [
-        { label: 'Book Venue', link: '/bookvenue' },
-        { label: 'Venue Statue', link: '/booked' },
-        { label: 'History', link: '/usersTable' },
-        // { label: 'Log In', link: '/login' },
-      ],
-    },
-    // {
-    //   label: 'Releases',
-    //   icon: IconCalendarStats,
-    //   links: [
-    //     { label: 'Upcoming releases', link: '/' },
-    //     { label: 'Previous releases', link: '/' },
-    //     { label: 'Releases schedule', link: '/' },
-    //   ],
-    // },
-    
-   
-    {label: 'Analytics', icon: IconPresentationAnalytics ,
-      initiallyOpened: true,
-           links: [
-        { label: 'Overall Stat', link: '/stat' },
-        { label: 'Monthly Stat', link: '/stat' },
-        { label: 'Yearly Stat', link: '/stat' },
-      ],
+const mockdata = [
+  { label: 'Dashboard', icon: IconGauge, 
+    links: [
+      { label: 'Home', link: '/stat' },
+      { label: 'Log Out', link: '/' },
+    ],
+   },
+  {
+    label: 'Venue',
+    icon: IconNotes,
+    initiallyOpened: true,
+    links: [
+      { label: 'Book Venue', link: '/bookvenue' },
+      { label: 'Venue Requests', link: '/booked' },
+    ],
+  },
+  {
+    label: 'Hall',
+    icon: IconPresentationAnalytics,
+    links: [
+      { label: 'Create Hall', link: '/createHall' },
+      { label: 'Hall List', link: '/hallList' },
+    ],
+  },
 
-    },
-    { label: 'Register', icon: IconFileAnalytics,
-      initiallyOpened: true,
-      links: [
-        // { label: 'Enable 2FA', link: '/stat' },
-        { label: 'Register Admin', link: '/registerAdmin' },
-        { label: 'Admins List', link: '/adminList' },
-      ],
-
-     },
-    // { label: 'Settings', icon: IconAdjustments },
-    {
-      label: 'Settings',
-      icon: IconLock,
-      initiallyOpened: true,
-      links: [
-        // { label: 'Enable 2FA', link: '/stat' },
-        { label: 'Set Price', link: '/mapDaysPrice' },
-        { label: 'Members Discount', link: '/membersDiscount' },
-      ],
-    },
-
-    {label: 'Reports', icon: IconPresentationAnalytics ,
-      initiallyOpened: true,
-      links: [
-   { label: 'Overall Report', link: '/reportOverall' },
-   { label: 'Monthly Report', link: '/reportMonthly' },
-   { label: 'Customer Report', link: '/reportCustomer' },
- ],
-
-},
+  {
+    label: 'Payment',
+    icon: IconPresentationAnalytics,
+    links: [
+      { label: 'Payment', link: '/paymentRequests' },
+     
+    ],
+  },
 
 
-    {
-      label: 'Security',
-      icon: IconLock,
-      initiallyOpened: true,
-      links: [
-        // { label: 'Enable 2FA', link: '/stat' },
-        { label: 'Change password', link: '/forgetpass' },
-        { label: 'Recovery codes', link: '/' },
-      ],
-    },
-  ];
-  
-  export function NavbarNested() {
-    const links = mockdata.map((item) => <LinksGroup {...item} key={item.label} />);
-  
-    return (
-      <nav className={classes.navbar}>
-        <div className={classes.header}>
-          <Group justify="space-between">
-            <div>Book Dashboard</div>
-            <ColorSchemeToggle/>
-          </Group>
+  {
+        label: 'Terms',
+        icon: IconPresentationAnalytics,
+        initiallyOpened: true,
+        links: [
+          { label: 'Create Term', link: '/termCreate' },
+          { label: 'Term List', link: '/termList' },
+        ],
+      },
+
+
+      {
+        label: 'Schedule',
+        icon: IconPresentationAnalytics,
+        initiallyOpened: true,
+        links: [
+          { label: 'Create Schedule', link: '/scheduleCreate' },
+          { label: 'Schedule List', link: '/scheduleList' },
+        ],
+      },
+
+      {
+        label: 'Promo',
+        icon: IconPresentationAnalytics,
+        initiallyOpened: true,
+        links: [
+          { label: 'Create Promo', link: '/promoCreate' },
+          { label: 'Promo List', link: '/promoList' },
+        ],
+      },
+
+      {
+        label: 'Analytics',
+        icon: IconPresentationAnalytics,
+        initiallyOpened: true,
+        links: [
+          { label: 'Overall Stat', link: '/stat' },
+          { label: 'Monthly Stat', link: '/stat' },
+          { label: 'Yearly Stat', link: '/stat' },
+        ],
+      },
+      {
+        label: 'Register',
+        icon: IconFileAnalytics,
+        initiallyOpened: true,
+        links: [
+          { label: 'Register Admin', link: '/registerAdmin' },
+          { label: 'Admins List', link: '/adminList' },
+        ],
+      },
+      {
+        label: 'Settings',
+        icon: IconLock,
+        initiallyOpened: true,
+        links: [
+          { label: 'Set Price', link: '/mapDaysPrice' },
+          // { label: 'Members Discount', link: '/membersDiscount' },
+        ],
+      },
+      {
+        label: 'Reports',
+        icon: IconPresentationAnalytics,
+        initiallyOpened: true,
+        links: [
+          { label: 'Overall Report', link: '/reportOverall' },
+          { label: 'Monthly Report', link: '/reportMonthly' },
+          { label: 'Customer Report', link: '/reportCustomer' },
+        ],
+      },
+      {
+        label: 'Security',
+        icon: IconLock,
+        initiallyOpened: true,
+        links: [
+          { label: 'Change password', link: '/changePass' },
+          { label: 'Recovery codes', link: '/' },
+        ],
+      },
+  // Add other sections as needed...
+];
+
+export function NavbarNested() {
+  const [opened, setOpened] = useState({});
+
+  const toggleLink = (label) => {
+    setOpened((prev) => ({ ...prev, [label]: !prev[label] }));
+  };
+
+  return (
+    <nav className={classes.navbar}>
+      <div className={classes.header}>
+        <Group justify="space-between">
+          <div className={classes.dashboardTitle}>Sunday-School</div>
+          <ColorSchemeToggle />
+        </Group>
+      </div>
+
+      <ScrollArea className={classes.links}>
+        <div className={classes.linksInner}>
+          {mockdata.map((item) => (
+            <div key={item.label}>
+              <div
+                className={classes.linkHeader}
+                onClick={() => toggleLink(item.label)}
+              >
+                <item.icon color="#00ffcc" size={20} style={{marginRight:15,marginTop:5}}/> {/* Neon color for icons */}
+                {item.label}
+              </div>
+              {item.links && (
+                <Collapse in={opened[item.label]}>
+                  {item.links.map((link) => (
+                    <Link href={link.link} key={link.label} passHref>
+                      <div className={classes.linkItem}>
+                        {link.label}
+                      </div>
+                    </Link>
+                  ))}
+                </Collapse>
+              )}
+            </div>
+          ))}
         </div>
-  
-        <ScrollArea className={classes.links}>
-          <div className={classes.linksInner}>{links}</div>
-        </ScrollArea>
-  
-        <div className={classes.footer}>
-          <UserButton />
-        </div>
-      </nav>
-    );
-  }
+      </ScrollArea>
+
+      <div className={classes.footer}>
+        <UserButton />
+      </div>
+    </nav>
+  );
+}

@@ -20,6 +20,6 @@
     },
     "plugins": [{ "name": "next" }]
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "app/page.js", "components/UserTable/TableSort.js"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "app/page.js", "components/UserTable/TableSort.js", "app/adminList/page.js", "app/booked/page.js"],
   "exclude": ["node_modules"]
 }

@@ -11,7 +11,7 @@ export default function SetDiscount () {
 
   const handleSubmit = () => {
     console.log('Submitted Discount Percentage:', discount);
-    // Here you can handle the submission, e.g., send to an API
+    
   };
 
   return (
