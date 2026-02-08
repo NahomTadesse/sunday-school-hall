@@ -9,10 +9,10 @@ on:
 
 jobs:
   build:
-    runs-on: hall-dev
+    runs-on: hohteberhan-runner
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Build Docker image
         if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
@@ -26,7 +26,7 @@ jobs:
 
   deploy:
     needs: build
-    runs-on: hall-dev
+    runs-on: hohteberhan-runner
     steps:
       - name: Deploy Docker container
         if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
@@ -45,7 +45,7 @@ jobs:
 
   cleanup:
     needs: [build, deploy]
-    runs-on: hall-dev
+    runs-on: hohteberhan-runner
     steps:
       - name: Remove Dangling Docker images
         run: |
