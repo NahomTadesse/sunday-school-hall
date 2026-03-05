@@ -255,26 +255,18 @@ import {
   TextInput,
   Badge,
   Card,
-  Flex,
+
   Pagination,
   Paper,
   Stack,
-  ThemeIcon,
+
   Tooltip,
 } from '@mantine/core';
 import { 
   IconCheck, 
   IconX, 
   IconSearch, 
-  IconUser, 
-  IconPhone, 
-  IconMail, 
 
-  IconCurrency,
-  IconCalendar,
-  IconStatusChange,
-  IconCreditCard,
-  IconClock,
   IconSortAscending,
   IconSortDescending,
 } from '@tabler/icons-react';
