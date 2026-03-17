@@ -17,7 +17,7 @@ import {
   Overlay,
 } from '@mantine/core';
 import { IconCheck, IconX, IconSearch } from '@tabler/icons-react';
-
+import Cookies from 'js-cookie';
 export default function PaymentRequestsTable() {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -29,7 +29,8 @@ export default function PaymentRequestsTable() {
   const [paymentMethod, setPaymentMethod] = useState('');
   const [paymentType, setPaymentType] = useState('FULL');
   const [amount, setAmount] = useState('');
-
+const userDataString = Cookies.get('userData');
+const userData = userDataString ? JSON.parse(userDataString) : null;
   useEffect(() => {
     fetchPayments();
   }, []);
@@ -37,7 +38,11 @@ export default function PaymentRequestsTable() {
   const fetchPayments = async () => {
     setLoading(true);
     try {
-      const response = await fetch('https://hall-api.hohitebirhan.com/api/v1/payment');
+      const response = await fetch('https://hall-api.hohitebirhan.com/api/v1/payment', {
+          headers: {
+            Authorization: `Bearer ${userData?.access_token}`
+          }
+        });
       const data = await response.json();
       console.log('reuess',data)
       if (data.success) {
@@ -74,6 +79,9 @@ export default function PaymentRequestsTable() {
     try {
       const response = await fetch(`https://hall-api.hohitebirhan.com/api/v1/payment/confirm?${queryParams}`, {
         method: 'GET', 
+          headers: {
+            Authorization: `Bearer ${userData?.access_token}`
+          }
       });
   
       if (response.ok) {

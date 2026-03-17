@@ -10,14 +10,15 @@ import {
 } from '@mantine/core';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-
+import Cookies from 'js-cookie';
 export default function CreatePromo() {
   const [promoCode, setPromoCode] = useState('');
   const [discountPercentage, setDiscountPercentage] = useState();
   const [expiryDate, setExpiryDate] = useState(null);
   const [memberOnly, setMemberOnly] = useState(false);
   const [notification, setNotification] = useState({ visible: false, message: '', color: '' });
-
+const userDataString = Cookies.get('userData');
+const userData = userDataString ? JSON.parse(userDataString) : null;
   const handleSubmit = async (event) => {
     event.preventDefault();
 
@@ -39,6 +40,11 @@ export default function CreatePromo() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+         
+            Authorization: `Bearer ${userData?.access_token}`
+          
+        
+          
         },
         body: JSON.stringify(body),
       });

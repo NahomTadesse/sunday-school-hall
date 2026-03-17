@@ -15,6 +15,7 @@ import {
 import { DateTimePicker } from '@mantine/dates'; 
 import '@mantine/dates/styles.css'
 import 'dayjs/locale/am';
+import Cookies from 'js-cookie';
 export default function ScheduleForm() {
   const [halls, setHalls] = useState([]);
   const [startTime, setStartTime] = useState(null); // Use null for DateTimePicker
@@ -24,12 +25,19 @@ export default function ScheduleForm() {
   const [hallId, setHallId] = useState('');
   const [notification, setNotification] = useState({ visible: false, message: '', color: '' });
   const [loading, setLoading] = useState(false); // Loading state
-
+const userDataString = Cookies.get('userData');
+const userData = userDataString ? JSON.parse(userDataString) : null;
   useEffect(() => {
     const fetchHalls = async () => {
       setLoading(true); // Start loading
       try {
-        const response = await fetch('https://hall-api.hohitebirhan.com/api/v1/hall');
+        const response = await fetch('https://hall-api.hohitebirhan.com/api/v1/hall',{
+          headers: {
+            Authorization: `Bearer ${userData?.access_token}`
+          }
+        }
+
+        );
         const data = await response.json();
         setHalls(data);
       } catch (error) {
@@ -65,6 +73,11 @@ export default function ScheduleForm() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+      Authorization: `Bearer ${userData?.access_token}`
+       
+       
+
+
         },
         body: JSON.stringify(body),
       });

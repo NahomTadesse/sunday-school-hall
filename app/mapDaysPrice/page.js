@@ -2,18 +2,23 @@
 import { useEffect, useState } from 'react';
 import { Container, TextInput, Button, Grid, Title, Loader, Notification,Group,ActionIcon} from '@mantine/core';
 import { IconEdit } from '@tabler/icons-react';
-
+import Cookies from 'js-cookie';
 export default function SetPrices() {
   const [disabled, setDisabled] = useState(true);
   const [prices, setPrices] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false); // State for submission loader
   const [notification, setNotification] = useState(null); // State for notification
-
+const userDataString = Cookies.get('userData');
+const userData = userDataString ? JSON.parse(userDataString) : null;
   useEffect(() => {
     const fetchPrices = async () => {
       try {
-        const response = await fetch('https://hall-api.hohitebirhan.com/api/v1/payment');
+        const response = await fetch('https://hall-api.hohitebirhan.com/api/v1/payment', {
+          headers: {
+            Authorization: `Bearer ${userData?.access_token}`
+          }
+        });
         const result = await response.json();
         
         if (result.success) {
@@ -56,6 +61,10 @@ export default function SetPrices() {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+           Authorization: `Bearer ${userData?.access_token}`
+    
+    
+
         },
         body: JSON.stringify({
           dayOfWeek: day,

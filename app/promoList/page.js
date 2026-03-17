@@ -17,7 +17,7 @@ import {
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import classes from './TableSort.module.css';
-
+import Cookies from 'js-cookie';
 function Th({ children, reversed, sorted, onSort }) {
   const Icon = sorted ? (reversed ? IconChevronUp : IconChevronDown) : IconSelector;
   return (
@@ -69,11 +69,16 @@ export default function PromoCodeList() {
   const [sortedData, setSortedData] = useState([]);
   const [sortBy, setSortBy] = useState(null);
   const [reverseSortDirection, setReverseSortDirection] = useState(false);
-
+const userDataString = Cookies.get('userData');
+const userData = userDataString ? JSON.parse(userDataString) : null;
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('https://hall-api.hohitebirhan.com/api/v1/code');
+        const response = await fetch('https://hall-api.hohitebirhan.com/api/v1/code',{
+          headers: {
+            Authorization: `Bearer ${userData?.access_token}`
+          }
+        });
         const { data } = await response.json(); // Extract data from response
         setSortedData(data);
       } catch (error) {
