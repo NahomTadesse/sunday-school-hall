@@ -9,7 +9,7 @@ import {
   Title,
   Notification,
 } from '@mantine/core';
-
+import Cookies from 'js-cookie';
 const facilitiesOptions = [
   { value: 'wifi', label: 'WiFi' },
   { value: 'tv', label: 'TV' },
@@ -24,7 +24,8 @@ export default function MyForm() {
   const [hallCapacity, setHallCapacity] = useState('');
   const [facilities, setFacilities] = useState([]);
   const [notification, setNotification] = useState({ visible: false, message: '', color: '' });
-
+const userDataString = Cookies.get('userData');
+const userData = userDataString ? JSON.parse(userDataString) : null;
   const handleSubmit = async (event) => {
     event.preventDefault();
 
@@ -52,6 +53,7 @@ export default function MyForm() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${userData?.access_token}`
         },
         body: JSON.stringify(body),
       });

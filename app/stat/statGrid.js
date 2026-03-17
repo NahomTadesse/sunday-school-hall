@@ -10,7 +10,7 @@ import {
 } from '@tabler/icons-react';
 import { Group, Paper, SimpleGrid, Text , Loader} from '@mantine/core';
 import classes from './StatsGrid.module.css';
-
+import Cookies from 'js-cookie';
 const icons = {
   reject: IconBan,
   accepted: IconCircleCheck,
@@ -21,11 +21,17 @@ const icons = {
 export function StatsGrid() {
   const [summaryData, setSummaryData] = useState({});
   const [loading, setLoading] = useState(true);
-
+const userDataString = Cookies.get('userData');
+const userData = userDataString ? JSON.parse(userDataString) : null;
   useEffect(() => {
     const fetchSummary = async () => {
       try {
-        const response = await fetch('https://hall-api.hohitebirhan.com/api/v1/book/booking-summary');
+        const response = await fetch('https://hall-api.hohitebirhan.com/api/v1/book/booking-summary', {
+        method: 'GET', 
+          headers: {
+            Authorization: `Bearer ${userData?.access_token}`
+          }
+      });
         const data = await response.json();
         setSummaryData(data);
       } catch (error) {

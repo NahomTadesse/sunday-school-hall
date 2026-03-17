@@ -18,7 +18,7 @@ import {
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import classes from './TableSort.module.css';
-
+import Cookies from 'js-cookie';
 function Th({ children, reversed, sorted, onSort }) {
   const Icon = sorted ? (reversed ? IconChevronUp : IconChevronDown) : IconSelector;
   return (
@@ -46,11 +46,16 @@ export default function TableSort() {
   const [sortDirection, setSortDirection] = useState('asc');
   const [modalOpened, setModalOpened] = useState(false);
   const [selectedTermText, setSelectedTermText] = useState('');
-
+const userDataString = Cookies.get('userData');
+const userData = userDataString ? JSON.parse(userDataString) : null;
   useEffect(() => {
     const fetchTerms = async () => {
       try {
-        const response = await fetch('https://hall-api.hohitebirhan.com/api/v1/terms');
+        const response = await fetch('https://hall-api.hohitebirhan.com/api/v1/terms', {
+          headers: {
+            Authorization: `Bearer ${userData?.access_token}`
+          }
+        });
         const data = await response.json();
         setTerms(data);
       } catch (error) {

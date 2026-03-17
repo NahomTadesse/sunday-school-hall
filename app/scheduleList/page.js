@@ -27,7 +27,7 @@ import classes from './TableSort.module.css';
 import { DateTimePicker } from '@mantine/dates';
 import '@mantine/dates/styles.css'
 import 'dayjs/locale/am';
-
+import Cookies from 'js-cookie';
 function Th({ children, reversed, sorted, onSort }) {
   const Icon = sorted ? (reversed ? IconChevronUp : IconChevronDown) : IconSelector;
   return (
@@ -91,10 +91,15 @@ export default function ScheduleList() {
   const [unexpectedEndTime, setUnexpectedEndTime] = useState(null);
   const [purpose, setPurpose] = useState('');
   const [requirements, setRequirements] = useState([]);
-
+const userDataString = Cookies.get('userData');
+const userData = userDataString ? JSON.parse(userDataString) : null;
   const fetchAllSchedules = async () => {
     try {
-      const response = await fetch('https://hall-api.hohitebirhan.com/api/v1/scheduler');
+      const response = await fetch('https://hall-api.hohitebirhan.com/api/v1/scheduler',{
+          headers: {
+            Authorization: `Bearer ${userData?.access_token}`
+          }
+        });
       const data = await response.json();
       const schedules = Array.isArray(data) ? data : data.schedules || data.data || [];
       setScheduleData(schedules);
@@ -109,7 +114,11 @@ export default function ScheduleList() {
   useEffect(() => {
     const fetchHalls = async () => {
       try {
-        const response = await fetch('https://hall-api.hohitebirhan.com/api/v1/hall');
+        const response = await fetch('https://hall-api.hohitebirhan.com/api/v1/hall',{
+          headers: {
+            Authorization: `Bearer ${userData?.access_token}`
+          }
+        });
         const data = await response.json();
         setHalls(data);
       } catch (error) {
@@ -125,7 +134,11 @@ export default function ScheduleList() {
     if (selectedHallId) {
       const fetchSchedules = async () => {
         try {
-          const response = await fetch(`https://hall-api.hohitebirhan.com/api/v1/scheduler/${selectedHallId}`);
+          const response = await fetch(`https://hall-api.hohitebirhan.com/api/v1/scheduler/${selectedHallId}`,{
+          headers: {
+            Authorization: `Bearer ${userData?.access_token}`
+          }
+        });
           const data = await response.json();
           setScheduleData(data);
           console.log('data',data)
@@ -158,6 +171,8 @@ export default function ScheduleList() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+            Authorization: `Bearer ${userData?.access_token}`
+     
         },
         body: JSON.stringify({
           newStartTime: newStartTime.toISOString(),
@@ -186,6 +201,10 @@ console.log(response)
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+     
+            Authorization: `Bearer ${userData?.access_token}`
+          
+      
         },
         body: JSON.stringify({
           startTime: unexpectedStartTime.toISOString(),
