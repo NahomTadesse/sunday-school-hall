@@ -357,14 +357,14 @@ const mockdata = [
     ],
   },
 
-  {
-    label: 'Payment',
-    icon: IconPresentationAnalytics,
-    links: [
-      { label: 'Payment', link: '/paymentRequests' },
+  // {
+  //   label: 'Payment',
+  //   icon: IconPresentationAnalytics,
+  //   links: [
+  //     { label: 'Payment', link: '/paymentRequests' },
      
-    ],
-  },
+  //   ],
+  // },
 
 
   {
