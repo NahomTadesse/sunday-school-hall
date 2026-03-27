@@ -673,14 +673,21 @@ export default function BookingTable() {
       paymentType: paymentType,
       amount: paymentType === 'PARTIAL' ? parseFloat(amount).toString() : selectedBooking.finalPrice?.toString() || '0',
     }).toString();
+    const body = {
+         bookingId: id,
+      paymentMethod: paymentMethod,
+      paymentType: paymentType,
+      amount: paymentType === 'PARTIAL' ? parseFloat(amount).toString() : selectedBooking.finalPrice?.toString() || '0',
+    }
   
     try {
-      const response = await fetch(`https://hall-api.hohitebirhan.com/api/v1/payment/confirm?${queryParams}`, {
+      const response = await fetch(`https://hall-api.hohitebirhan.com/api/v1/payment/confirm`, { 
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${userData?.access_token}`,
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify(body),
       });
   
       if (response.ok) {
