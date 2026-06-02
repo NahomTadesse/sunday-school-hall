@@ -100,6 +100,12 @@ const userData = userDataString ? JSON.parse(userDataString) : null;
             Authorization: `Bearer ${userData?.access_token}`
           }
         });
+
+               if (response.status === 401 || response.status === 403 ) {
+   
+    window.location.href = '/login';
+    throw new Error('Session expired');
+  }
       const data = await response.json();
       const schedules = Array.isArray(data) ? data : data.schedules || data.data || [];
       setScheduleData(schedules);
@@ -119,6 +125,13 @@ const userData = userDataString ? JSON.parse(userDataString) : null;
             Authorization: `Bearer ${userData?.access_token}`
           }
         });
+
+               if (response.status === 401 || response.status === 403 ) {
+   
+    window.location.href = '/login';
+    throw new Error('Session expired');
+  }
+
         const data = await response.json();
         setHalls(data);
       } catch (error) {
@@ -139,6 +152,13 @@ const userData = userDataString ? JSON.parse(userDataString) : null;
             Authorization: `Bearer ${userData?.access_token}`
           }
         });
+
+              if (response.status === 401 || response.status === 403 ) {
+   
+    window.location.href = '/login';
+    throw new Error('Session expired');
+  }
+
           const data = await response.json();
           setScheduleData(data);
           console.log('data',data)
@@ -184,6 +204,12 @@ console.log(newStartTime.toISOString())
 console.log(newEndTime.toISOString())
 console.log(selectedScheduleId)
 console.log(response)
+
+       if (response.status === 401 || response.status === 403 ) {
+   
+    window.location.href = '/login';
+    throw new Error('Session expired');
+  }
       if (response.ok) {
         alert('Schedule postponed successfully!');
         closePostpone();
@@ -215,6 +241,13 @@ console.log(response)
         }),
       });
 console.log('hall',selectedHallId,)
+
+      if (response.status === 401 || response.status === 403 ) {
+   
+    window.location.href = '/login';
+    throw new Error('Session expired');
+  }
+
       if (response.ok) {
         alert('Unexpected schedule created successfully!');
         closeUnexpected();

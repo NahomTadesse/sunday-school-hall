@@ -58,6 +58,12 @@ const userData = userDataString ? JSON.parse(userDataString) : null;
         body: JSON.stringify(body),
       });
 
+         if (response.status === 401 || response.status === 403 ) {
+   
+    window.location.href = '/login';
+    throw new Error('Session expired');
+  }
+
       if (response.ok) {
         const data = await response.json();
         setNotification({ visible: true, message: data.message, color: 'green' });

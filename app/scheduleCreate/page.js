@@ -38,6 +38,11 @@ const userData = userDataString ? JSON.parse(userDataString) : null;
         }
 
         );
+              if (response.status === 401 || response.status === 403 ){
+   
+    window.location.href = '/login';
+    throw new Error('Session expired');
+  }
         const data = await response.json();
         setHalls(data);
       } catch (error) {
@@ -79,8 +84,16 @@ const userData = userDataString ? JSON.parse(userDataString) : null;
 
 
         },
+
+        
         body: JSON.stringify(body),
       });
+
+             if (response.status === 401 || response.status === 403 ) {
+   
+    window.location.href = '/login';
+    throw new Error('Session expired');
+  }
 
       if (response.ok) {
         const data = await response.json();

@@ -533,6 +533,7 @@ import {
   IconCash,
 } from '@tabler/icons-react';
 import Cookies from 'js-cookie';
+import { removeAuthData } from '../utils/auth';
 
 const userDataString = Cookies.get('userData');
 const userData = userDataString ? JSON.parse(userDataString) : null;
@@ -587,6 +588,13 @@ export default function BookingTable() {
         }
       });
       
+       if (response.status === 401 || response.status === 403 ) {
+        console.log("logggggggggggg",response.status)
+    removeAuthData();
+    window.location.href = '/login';
+    return
+  }
+
       if (!response.ok) {
         throw new Error('Failed to fetch bookings');
       }
@@ -611,6 +619,11 @@ export default function BookingTable() {
         },
       });
 
+          if (response.status === 401 || response.status === 403 ) {
+    removeAuthData();
+    window.location.href = '/login';
+    throw new Error('Session expired');
+  }
       if (response.ok) {
         const data = await response.json();
         setNotification({ visible: true, message: data.message || 'Booking accepted successfully!', color: 'green' });
@@ -636,6 +649,12 @@ export default function BookingTable() {
           'Content-Type': 'application/json',
         },
       });
+
+          if (response.status === 401 || response.status === 403 ) {
+    removeAuthData();
+    window.location.href = '/login';
+    throw new Error('Session expired');
+  }
 
       if (response.ok) {
         const data = await response.json();
@@ -689,6 +708,12 @@ export default function BookingTable() {
         },
         body: JSON.stringify(body),
       });
+
+         if (response.status === 401 || response.status === 403 ) {
+    removeAuthData();
+    window.location.href = '/login';
+    throw new Error('Session expired');
+  }
   
       if (response.ok) {
         const data = await response.json();
