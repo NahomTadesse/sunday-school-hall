@@ -56,6 +56,11 @@ const userData = userDataString ? JSON.parse(userDataString) : null;
             Authorization: `Bearer ${userData?.access_token}`
           }
         });
+               if (response.status === 401 || response.status === 403 ) {
+   
+    window.location.href = '/login';
+    throw new Error('Session expired');
+  }
         const data = await response.json();
         setTerms(data);
       } catch (error) {

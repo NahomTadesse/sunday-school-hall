@@ -208,12 +208,13 @@ export default function StatsRing() {
           },
         });
 
-        if (response.status === 401) {
-          // Token expired or invalid
-          router.push('/');
-          return;
-        }
+              if (response.status === 401 || response.status === 403 ) {
+   
+    window.location.href = '/login';
+    throw new Error('Session expired');
+  }
 
+        
         const data = await response.json();
         setSummaryData(data);
       } catch (error) {

@@ -43,6 +43,13 @@ const userData = userDataString ? JSON.parse(userDataString) : null;
             Authorization: `Bearer ${userData?.access_token}`
           }
         });
+
+              if (response.status === 401 || response.status === 403 ) {
+   
+    window.location.href = '/login';
+    throw new Error('Session expired');
+  }
+
       const data = await response.json();
       console.log('reuess',data)
       if (data.success) {
@@ -84,6 +91,12 @@ const userData = userDataString ? JSON.parse(userDataString) : null;
           }
       });
   
+             if (response.status === 401 || response.status === 403 ) {
+   
+    window.location.href = '/login';
+    throw new Error('Session expired');
+  }
+
       if (response.ok) {
         setNotification({ visible: true, message: 'Payment confirmed.', color: 'green' });
         fetchPayments();

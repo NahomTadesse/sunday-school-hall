@@ -21,6 +21,7 @@ import '@mantine/dates/styles.css';
 import 'dayjs/locale/am';
 import Cookies from 'js-cookie';
 import dayjs from 'dayjs';
+import { removeAuthData } from '../utils/auth';
 
 const userDataString = Cookies.get('userData');
 const userDataA = userDataString ? JSON.parse(userDataString) : null;
@@ -152,6 +153,12 @@ export default function MyForm() {
             Authorization: `Bearer ${userDataA?.access_token}`
           }
         });
+
+            if (response.status === 401 || response.status === 403 ) {
+            removeAuthData();
+            window.location.href = '/login';
+            throw new Error('Session expired');
+          }
         const data = await response.json();
         setHalls(data);
       } catch (error) {
@@ -169,6 +176,12 @@ export default function MyForm() {
             Authorization: `Bearer ${userDataA?.access_token}`
           }
         });
+
+          if (response.status === 401 || response.status === 403 ) {
+    removeAuthData();
+    window.location.href = '/login';
+    throw new Error('Session expired');
+  }
         const result = await response.json();
         if (result.success) {
           const days = result.data.map((item: any) => ({
@@ -194,6 +207,12 @@ export default function MyForm() {
             Authorization: `Bearer ${userDataA?.access_token}`
           }
         });
+
+            if (response.status === 401 || response.status === 403 ) {
+    removeAuthData();
+    window.location.href = '/login';
+    throw new Error('Session expired');
+  }
         const result = await response.json();
         if (result.success) {
           const codes = result.data.map((code: any) => ({
@@ -301,6 +320,11 @@ export default function MyForm() {
         body: JSON.stringify(body),
       });
 
+          if (response.status === 401 || response.status === 403 ) {
+    removeAuthData();
+    window.location.href = '/login';
+    throw new Error('Session expired');
+  }
       if (response.ok) {
         const data = await response.json();
         setNotification({ visible: true, message: data.message, color: 'green' });
