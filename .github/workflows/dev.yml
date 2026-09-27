@@ -1,0 +1,55 @@
+name: Deploy to Development
+
+on:
+  pull_request:
+    branches:
+      - dev
+    types:
+      - closed
+
+jobs:
+  build:
+    runs-on: hohteberhan-runner
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
+        run: |
+          retries=3
+          until [ $retries -le 0 ] || docker build --no-cache \
+          --no-cache \
+          -t hall-dashboard_dev_image .; do
+            ((retries--))
+          done
+
+  deploy:
+    needs: build
+    runs-on: hohteberhan-runner
+    steps:
+      - name: Deploy Docker container
+        if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
+        run: |
+          docker stop hall-dashboard_dev_container || true
+          docker rm hall-dashboard_dev_container || true
+          retries=3
+          until [ $retries -le 0 ] || docker run -d \
+          -p ${{ secrets.HALL_DASHBOARD_DEV_PORT }}:80 \
+          --name hall-dashboard_dev_container \
+          --network hall_dev-network \
+          --restart unless-stopped \
+          hall-dashboard_dev_image:latest; do
+            ((retries--))
+          done
+
+  cleanup:
+    needs: [build, deploy]
+    runs-on: hohteberhan-runner
+    steps:
+      - name: Remove Dangling Docker images
+        run: |
+          docker rmi $(docker images --quiet --filter "dangling=true") || true
+      - name: Cleanup Docker Builder
+        run: |
+          docker builder prune -a || true
