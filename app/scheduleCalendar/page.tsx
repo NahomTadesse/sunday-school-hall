@@ -10,6 +10,7 @@ import { SkeletonRows } from '@/components/ui/skeleton-row';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MonthCalendar, type CalendarEvent } from '@/components/shared/MonthCalendar';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { handleUnauthorized } from '@/lib/api';
 
 const API_BASE = 'https://hall-api.hohitebirhan.com/api/v1';
 
@@ -44,7 +45,7 @@ export default function ScheduleCalendarPage() {
           headers: { accept: '*/*', Authorization: `Bearer ${userData?.access_token}` },
         });
         if (response.status === 401 || response.status === 403) {
-          window.location.href = '/login';
+          handleUnauthorized();
           return;
         }
         const result = await response.json();

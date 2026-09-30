@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { FacilitiesPicker, type FacilityOption } from '@/components/shared/FacilitiesPicker';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { handleUnauthorized } from '@/lib/api';
 
 const API_BASE = 'https://hall-api.hohitebirhan.com/api/v1';
 
@@ -56,7 +57,7 @@ export default function CreateHallPage() {
       });
 
       if (response.status === 401 || response.status === 403) {
-        window.location.href = '/login';
+        handleUnauthorized();
         return;
       }
 

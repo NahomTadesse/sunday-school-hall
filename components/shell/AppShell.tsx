@@ -13,9 +13,19 @@ const PUBLIC_ROUTES = ['/', '/login', '/forgetpass'];
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { isAuthenticated, isReady } = useAuth();
+  const { isAuthenticated, isReady, recheck } = useAuth();
 
   const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
+
+  // Re-validate the session (cookie present + not expired) on every navigation
+  // and when the tab regains focus, so the UI never trusts a stale snapshot.
+  useEffect(() => {
+    if (!isReady) return;
+    recheck();
+    const onFocus = () => recheck();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [isReady, pathname, recheck]);
 
   useEffect(() => {
     if (!isReady) return;
@@ -27,7 +37,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
   }, [isReady, isAuthenticated, isPublicRoute, pathname, router]);
 
-  if (!isReady) {
+  // Show the loader (not the half-rendered page) while a redirect is pending.
+  // Previously protected pages rendered without a shell and fired API calls
+  // with no session for a frame or two before redirecting, which looked like
+  // a glitch and could trigger the 401 loop.
+  const redirectPending =
+    isReady && ((!isAuthenticated && !isPublicRoute) || (isAuthenticated && isPublicRoute && pathname !== '/forgetpass'));
+
+  if (!isReady || redirectPending) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

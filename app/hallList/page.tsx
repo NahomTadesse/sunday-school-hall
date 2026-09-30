@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { SkeletonRows } from '@/components/ui/skeleton-row';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { handleUnauthorized } from '@/lib/api';
 
 const API_BASE = 'https://hall-api.hohitebirhan.com/api/v1';
 
@@ -43,7 +44,7 @@ export default function HallListPage() {
           headers: { Authorization: `Bearer ${userData?.access_token}` },
         });
         if (response.status === 401 || response.status === 403) {
-          window.location.href = '/login';
+          handleUnauthorized();
           return;
         }
         const data = await response.json();

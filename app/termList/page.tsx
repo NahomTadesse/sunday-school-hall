@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { SkeletonRows } from '@/components/ui/skeleton-row';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { handleUnauthorized } from '@/lib/api';
 
 const API_BASE = 'https://hall-api.hohitebirhan.com/api/v1';
 
@@ -38,7 +39,7 @@ export default function TermListPage() {
           headers: { Authorization: `Bearer ${userData?.access_token}` },
         });
         if (response.status === 401 || response.status === 403) {
-          window.location.href = '/login';
+          handleUnauthorized();
           return;
         }
         const data = await response.json();

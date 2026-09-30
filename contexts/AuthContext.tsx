@@ -16,6 +16,7 @@ interface AuthContextValue {
   isReady: boolean;
   login: (data: UserData, rememberMe?: boolean) => void;
   logout: () => void;
+  recheck: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -28,8 +29,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refresh = useCallback(() => {
     const ok = checkIsAuthenticated();
-    setAuthenticated(ok);
-    setUser(ok ? getUserData() : null);
+    // Only set state when something actually changed to avoid extra renders.
+    setAuthenticated((prev) => (prev === ok ? prev : ok));
+    if (!ok) {
+      setUser(null);
+      return;
+    }
+    try {
+      setUser((prev) => prev ?? getUserData());
+    } catch {
+      removeAuthData();
+      setAuthenticated(false);
+      setUser(null);
+    }
   }, []);
 
   useEffect(() => {
@@ -53,7 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [router]);
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: authenticated, isReady, login, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: authenticated, isReady, login, logout, recheck: refresh }}>
       {children}
     </AuthContext.Provider>
   );

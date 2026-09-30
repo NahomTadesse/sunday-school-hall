@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getAccessToken } from '@/app/utils/auth';
+import { handleUnauthorized } from '@/lib/api';
 
 ChartJS.register(LineElement, CategoryScale, LinearScale, PointElement, ChartTooltip);
 
@@ -49,7 +50,7 @@ export default function StatsPage() {
         });
 
         if (response.status === 401 || response.status === 403) {
-          window.location.href = '/login';
+          handleUnauthorized();
           return;
         }
 

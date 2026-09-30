@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { handleUnauthorized } from '@/lib/api';
 
 const API_BASE = 'https://hall-api.hohitebirhan.com/api/v1';
 
@@ -40,7 +41,7 @@ export default function CreatePromoPage() {
       });
 
       if (response.status === 401 || response.status === 403) {
-        window.location.href = '/login';
+        handleUnauthorized();
         return;
       }
 

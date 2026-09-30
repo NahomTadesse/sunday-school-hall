@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, type SelectOption } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { handleUnauthorized } from '@/lib/api';
 
 const API_BASE = 'https://hall-api.hohitebirhan.com/api/v1';
 const phoneNumberRegex = /^(?:\+251|\b251)\d{9}|\b(?:09|07)\d{8}\b(?![-.,])[^-.,]*$/;
@@ -73,7 +74,7 @@ export default function BookVenuePage() {
       try {
         const response = await fetch(`${API_BASE}/hall`, { headers });
         if (response.status === 401 || response.status === 403) {
-          window.location.href = '/login';
+          handleUnauthorized();
           return;
         }
         setHalls(await response.json());
@@ -185,7 +186,7 @@ export default function BookVenuePage() {
       });
 
       if (response.status === 401 || response.status === 403) {
-        window.location.href = '/login';
+        handleUnauthorized();
         return;
       }
 

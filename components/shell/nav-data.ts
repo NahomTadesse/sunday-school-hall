@@ -55,6 +55,7 @@ export const navGroups: NavGroup[] = [
     icon: CalendarClock,
     links: [
       { labelKey: 'nav.createSchedule', href: '/scheduleCreate' },
+      { labelKey: 'nav.bulkSchedule', href: '/scheduleBulk' },
       { labelKey: 'nav.scheduleList', href: '/scheduleList' },
       { labelKey: 'nav.scheduleCalendar', href: '/scheduleCalendar' },
     ],

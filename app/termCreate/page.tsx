@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, type SelectOption } from '@/components/ui/select';
+import { handleUnauthorized } from '@/lib/api';
 
 const API_BASE = 'https://hall-api.hohitebirhan.com/api/v1';
 
@@ -32,7 +33,7 @@ export default function CreateTermPage() {
           headers: { Authorization: `Bearer ${userData?.access_token}` },
         });
         if (response.status === 401 || response.status === 403) {
-          window.location.href = '/login';
+          handleUnauthorized();
           return;
         }
         const data = await response.json();
@@ -66,7 +67,7 @@ export default function CreateTermPage() {
       });
 
       if (response.status === 401 || response.status === 403) {
-        window.location.href = '/login';
+        handleUnauthorized();
         return;
       }
 

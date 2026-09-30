@@ -25,6 +25,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { FacilitiesPicker } from '@/components/shared/FacilitiesPicker';
 import { MonthCalendar, type CalendarEvent } from '@/components/shared/MonthCalendar';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { handleUnauthorized } from '@/lib/api';
 
 const API_BASE = 'https://hall-api.hohitebirhan.com/api/v1';
 
@@ -79,7 +80,7 @@ export default function ScheduleListPage() {
     try {
       const response = await fetch(`${API_BASE}/scheduler`, { headers: getAuthHeader() });
       if (response.status === 401 || response.status === 403) {
-        window.location.href = '/login';
+        handleUnauthorized();
         return;
       }
       const data = await response.json();
@@ -97,7 +98,7 @@ export default function ScheduleListPage() {
       try {
         const response = await fetch(`${API_BASE}/hall`, { headers: getAuthHeader() });
         if (response.status === 401 || response.status === 403) {
-          window.location.href = '/login';
+          handleUnauthorized();
           return;
         }
         setHalls(await response.json());
@@ -116,7 +117,7 @@ export default function ScheduleListPage() {
       try {
         const response = await fetch(`${API_BASE}/scheduler/${selectedHallId}`, { headers: getAuthHeader() });
         if (response.status === 401 || response.status === 403) {
-          window.location.href = '/login';
+          handleUnauthorized();
           return;
         }
         setScheduleData(await response.json());
@@ -165,7 +166,7 @@ export default function ScheduleListPage() {
         }),
       });
       if (response.status === 401 || response.status === 403) {
-        window.location.href = '/login';
+        handleUnauthorized();
         return;
       }
       if (response.ok) {
@@ -195,7 +196,7 @@ export default function ScheduleListPage() {
         }),
       });
       if (response.status === 401 || response.status === 403) {
-        window.location.href = '/login';
+        handleUnauthorized();
         return;
       }
       if (response.ok) {

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
 import { Badge } from '@/components/ui/badge';
 import { SortableTable, type Column } from '@/components/shared/SortableTable';
+import { handleUnauthorized } from '@/lib/api';
 
 const API_BASE = 'https://hall-api.hohitebirhan.com/api/v1';
 
@@ -28,7 +29,7 @@ export default function PromoCodeListPage() {
           headers: { Authorization: `Bearer ${userData?.access_token}` },
         });
         if (response.status === 401 || response.status === 403) {
-          window.location.href = '/login';
+          handleUnauthorized();
           return;
         }
         const { data } = await response.json();

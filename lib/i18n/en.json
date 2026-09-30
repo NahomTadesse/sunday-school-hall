@@ -14,6 +14,7 @@
   "nav.termList": "Term List",
   "nav.schedule": "Schedule",
   "nav.createSchedule": "Create Schedule",
+  "nav.bulkSchedule": "Bulk Upload (Excel)",
   "nav.scheduleList": "Schedule List",
   "nav.scheduleCalendar": "Calendar",
   "nav.promo": "Promo",

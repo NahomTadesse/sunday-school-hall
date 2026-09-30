@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { SkeletonRows } from '@/components/ui/skeleton-row';
+import { handleUnauthorized } from '@/lib/api';
 
 const API_BASE = 'https://hall-api.hohitebirhan.com/api/v1';
 
@@ -33,7 +34,7 @@ export default function SetPricesPage() {
           headers: { Authorization: `Bearer ${userData?.access_token}` },
         });
         if (response.status === 401 || response.status === 403) {
-          window.location.href = '/login';
+          handleUnauthorized();
           return;
         }
         const result = await response.json();
@@ -73,7 +74,7 @@ export default function SetPricesPage() {
         body: JSON.stringify({ dayOfWeek: day, basePrice: parseFloat(basePrice), memberPrice: parseFloat(memberPrice), id }),
       });
       if (response.status === 401 || response.status === 403) {
-        window.location.href = '/login';
+        handleUnauthorized();
         return;
       }
       const result = await response.json();

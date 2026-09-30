@@ -15,7 +15,7 @@ import { Select } from '@/components/ui/select';
 import { RadioGroup } from '@/components/ui/radio-group';
 import { Pagination } from '@/components/ui/pagination';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { removeAuthData } from '../utils/auth';
+import { handleUnauthorized } from '@/lib/api';
 
 const API_BASE = 'https://hall-api.hohitebirhan.com/api/v1';
 const ITEMS_PER_PAGE = 5;
@@ -87,8 +87,7 @@ export default function BookedPage() {
     try {
       const response = await fetch(`${API_BASE}/book`, { headers: getAuthHeader() });
       if (response.status === 401 || response.status === 403) {
-        removeAuthData();
-        window.location.href = '/login';
+        handleUnauthorized();
         return;
       }
       if (!response.ok) throw new Error('Failed to fetch bookings');
@@ -109,8 +108,7 @@ export default function BookedPage() {
     try {
       const response = await fetch(`${API_BASE}/book/confirm/${id}`, { method: 'PUT', headers: getAuthHeader() });
       if (response.status === 401 || response.status === 403) {
-        removeAuthData();
-        window.location.href = '/login';
+        handleUnauthorized();
         return;
       }
       const data = await response.json();
@@ -132,8 +130,7 @@ export default function BookedPage() {
     try {
       const response = await fetch(`${API_BASE}/book/reject/${id}`, { method: 'PUT', headers: getAuthHeader() });
       if (response.status === 401 || response.status === 403) {
-        removeAuthData();
-        window.location.href = '/login';
+        handleUnauthorized();
         return;
       }
       const data = await response.json();
@@ -175,8 +172,7 @@ export default function BookedPage() {
         body: JSON.stringify(body),
       });
       if (response.status === 401 || response.status === 403) {
-        removeAuthData();
-        window.location.href = '/login';
+        handleUnauthorized();
         return;
       }
       const data = await response.json();

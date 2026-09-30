@@ -13,6 +13,7 @@ import { SkeletonRows } from '@/components/ui/skeleton-row';
 import { Select } from '@/components/ui/select';
 import { RadioGroup } from '@/components/ui/radio-group';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { handleUnauthorized } from '@/lib/api';
 
 const API_BASE = 'https://hall-api.hohitebirhan.com/api/v1';
 
@@ -44,7 +45,7 @@ export default function PaymentRequestsPage() {
     try {
       const response = await fetch(`${API_BASE}/payment`, { headers: getAuthHeader() });
       if (response.status === 401 || response.status === 403) {
-        window.location.href = '/login';
+        handleUnauthorized();
         return;
       }
       const data = await response.json();
@@ -82,7 +83,7 @@ export default function PaymentRequestsPage() {
     try {
       const response = await fetch(`${API_BASE}/payment/confirm?${queryParams}`, { headers: getAuthHeader() });
       if (response.status === 401 || response.status === 403) {
-        window.location.href = '/login';
+        handleUnauthorized();
         return;
       }
       if (response.ok) {
