@@ -1,41 +1,42 @@
+'use client';
 
-
-"use client";
-import { useState, useEffect } from 'react';
-import {
-  TextInput,
-  Select,
-  Button,
-  Group,
-  Container,
-  Title,
-  Notification,
-  Grid,
-  Text,
-  Loader,
-  Modal,
-  Checkbox,
-} from '@mantine/core';
-import { DateTimePicker } from '@mantine/dates';
-import '@mantine/dates/styles.css';
-import 'dayjs/locale/am';
+import { useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
 import dayjs from 'dayjs';
-import { removeAuthData } from '../utils/auth';
+import { toast } from 'sonner';
+import { CalendarPlus } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Select, type SelectOption } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { handleUnauthorized } from '@/lib/api';
 
-const userDataString = Cookies.get('userData');
-const userDataA = userDataString ? JSON.parse(userDataString) : null;
-
-// Validation regex patterns
+const API_BASE = 'https://hall-api.hohitebirhan.com/api/v1';
 const phoneNumberRegex = /^(?:\+251|\b251)\d{9}|\b(?:09|07)\d{8}\b(?![-.,])[^-.,]*$/;
-const nameRegex = /^[A-Za-z\s]+$/; // Only letters and spaces
+const nameRegex = /^[A-Za-z\s]+$/;
 
-export default function MyForm() {
+interface Hall {
+  id: string;
+  name: string;
+  terms: { id: string; termsText: string }[];
+}
+
+interface DayOption {
+  value: string;
+  label: string;
+  basePrice: number;
+  memberPrice: number;
+}
+
+export default function BookVenuePage() {
   const [fullName, setFullName] = useState('');
   const [fullNameError, setFullNameError] = useState('');
-  const [selectedDay, setSelectedDay] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [endDate, setEndDate] = useState(null);
+  const [selectedDay, setSelectedDay] = useState<DayOption | null>(null);
+  const [selectedDate, setSelectedDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [alternativePhoneNumber, setAlternativePhoneNumber] = useState('');
@@ -45,13 +46,12 @@ export default function MyForm() {
   const [price, setPrice] = useState('');
   const [isMember, setIsMember] = useState(false);
   const [hallId, setHallId] = useState('');
-  const [halls, setHalls] = useState([]);
-  const [daysOfWeek, setDaysOfWeek] = useState([]);
-  const [promoCodes, setPromoCodes] = useState([]);
+  const [halls, setHalls] = useState<Hall[]>([]);
+  const [daysOfWeek, setDaysOfWeek] = useState<DayOption[]>([]);
+  const [promoCodes, setPromoCodes] = useState<SelectOption[]>([]);
   const [selectedPromoCode, setSelectedPromoCode] = useState('');
-  const [notification, setNotification] = useState({ visible: false, message: '', color: '' });
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const [selectedTerms, setSelectedTerms] = useState([]);
+  const [selectedTerms, setSelectedTerms] = useState<{ id: string; termsText: string }[]>([]);
   const [purpose, setPurpose] = useState('');
   const [eventName, setEventName] = useState('');
   const [loading, setLoading] = useState(false);
@@ -59,280 +59,144 @@ export default function MyForm() {
   const [dateError, setDateError] = useState('');
   const [endDateError, setEndDateError] = useState('');
 
-  // Validate phone number
-  const validatePhone = (phone: string): boolean => {
-    if (!phone) {
-      return true; // Empty is handled by required field
-    }
-    return phoneNumberRegex.test(phone);
-  };
-
-  // Validate full name (no numbers)
-  const validateFullName = (name: string): boolean => {
-    if (!name) {
-      return true;
-    }
-    return nameRegex.test(name);
-  };
-
-  // Check if date is future (including today)
-  const isFutureDate = (date: Date | null): boolean => {
-    if (!date) {
-      return true;
-    }
-    const today = dayjs().startOf('day');
-    const selected = dayjs(date).startOf('day');
-    return selected.isSame(today) || selected.isAfter(today);
-  };
-
-  // Handle phone number change with validation
-  const handlePhoneChange = (value: string) => {
-    setPhoneNumber(value);
-    if (value && !validatePhone(value)) {
-      setPhoneError('Please enter a valid Ethiopian phone number (e.g., 0912345678, +251912345678)');
-    } else {
-      setPhoneError('');
-    }
-  };
-
-  // Handle alternative phone number change with validation
-  const handleAltPhoneChange = (value: string) => {
-    setAlternativePhoneNumber(value);
-    if (value && !validatePhone(value)) {
-      setAltPhoneError('Please enter a valid Ethiopian phone number');
-    } else {
-      setAltPhoneError('');
-    }
-  };
-
-  // Handle full name change with validation
-  const handleFullNameChange = (value: string) => {
-    setFullName(value);
-    if (value && !validateFullName(value)) {
-      setFullNameError('Full name should only contain letters and spaces');
-    } else {
-      setFullNameError('');
-    }
-  };
-
-  // Handle start date change with validation
-  const handleStartDateChange = (date: Date | null) => {
-    setSelectedDate(date);
-    if (date && !isFutureDate(date)) {
-      setDateError('Start date must be today or a future date');
-    } else {
-      setDateError('');
-    }
-    
-    // Clear end date if it's before the new start date
-    if (endDate && date && dayjs(endDate).isBefore(dayjs(date))) {
-      setEndDate(null);
-    }
-  };
-
-  // Handle end date change with validation
-  const handleEndDateChange = (date: Date | null) => {
-    setEndDate(date);
-    if (date && selectedDate) {
-      if (dayjs(date).isSame(dayjs(selectedDate)) || dayjs(date).isAfter(dayjs(selectedDate))) {
-        setEndDateError('');
-      } else {
-        setEndDateError('End date must be on or after start date');
-      }
-    } else {
-      setEndDateError('');
-    }
-  };
+  const validatePhone = (phone: string) => !phone || phoneNumberRegex.test(phone);
+  const validateFullName = (name: string) => !name || nameRegex.test(name);
+  const isFutureDate = (date: string) => !date || dayjs(date).isSame(dayjs().startOf('day'), 'day') || dayjs(date).isAfter(dayjs().startOf('day'));
 
   useEffect(() => {
-    const fetchHalls = async () => {
-      setLoading(true);
-      try {
-        const response = await fetch('https://hall-api.hohitebirhan.com/api/v1/hall', {
-          headers: {
-            Authorization: `Bearer ${userDataA?.access_token}`
-          }
-        });
+    const userDataString = Cookies.get('userData');
+    const userData = userDataString ? JSON.parse(userDataString) : null;
+    if (!userData?.access_token) return;
 
-            if (response.status === 401 || response.status === 403 ) {
-            removeAuthData();
-            window.location.href = '/login';
-            throw new Error('Session expired');
-          }
-        const data = await response.json();
-        setHalls(data);
-      } catch (error) {
-        // Error logged for debugging
-      } finally {
-        setLoading(false);
-      }
+    const headers = { Authorization: `Bearer ${userData.access_token}` };
+
+    const fetchHalls = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/hall`, { headers });
+        if (response.status === 401 || response.status === 403) {
+          handleUnauthorized();
+          return;
+        }
+        setHalls(await response.json());
+      } catch {}
     };
 
     const fetchDaysOfWeek = async () => {
-      setLoading(true);
       try {
-        const response = await fetch('https://hall-api.hohitebirhan.com/api/v1/payment', {
-          headers: {
-            Authorization: `Bearer ${userDataA?.access_token}`
-          }
-        });
-
-          if (response.status === 401 || response.status === 403 ) {
-    removeAuthData();
-    window.location.href = '/login';
-    throw new Error('Session expired');
-  }
+        const response = await fetch(`${API_BASE}/payment`, { headers });
+        if (response.status === 401 || response.status === 403) return;
         const result = await response.json();
         if (result.success) {
-          const days = result.data.map((item: any) => ({
-            value: item.id,
-            label: item.dayOfWeek,
-            basePrice: item.basePrice,
-            memberPrice: item.memberPrice,
-          }));
-          setDaysOfWeek(days);
+          setDaysOfWeek(
+            result.data.map((item: any) => ({
+              value: item.id,
+              label: item.dayOfWeek,
+              basePrice: item.basePrice,
+              memberPrice: item.memberPrice,
+            }))
+          );
         }
-      } catch (error) {
-        // Error logged for debugging
-      } finally {
-        setLoading(false);
-      }
+      } catch {}
     };
 
     const fetchPromoCodes = async () => {
-      setLoading(true);
       try {
-        const response = await fetch('https://hall-api.hohitebirhan.com/api/v1/code', {
-          headers: {
-            Authorization: `Bearer ${userDataA?.access_token}`
-          }
-        });
-
-            if (response.status === 401 || response.status === 403 ) {
-    removeAuthData();
-    window.location.href = '/login';
-    throw new Error('Session expired');
-  }
+        const response = await fetch(`${API_BASE}/code`, { headers });
+        if (response.status === 401 || response.status === 403) return;
         const result = await response.json();
         if (result.success) {
-          const codes = result.data.map((code: any) => ({
-            value: code.code,
-            label: code.code,
-          }));
-          setPromoCodes(codes);
+          setPromoCodes(result.data.map((code: any) => ({ value: code.code, label: code.code })));
         }
-      } catch (error) {
-        // Error logged for debugging
-      } finally {
-        setLoading(false);
-      }
+      } catch {}
     };
 
-    if (userDataA?.access_token) {
-      fetchHalls();
-      fetchDaysOfWeek();
-      fetchPromoCodes();
-    }
+    fetchHalls();
+    fetchDaysOfWeek();
+    fetchPromoCodes();
   }, []);
 
-  const handleHallChange = (value: any) => {
-    const selectedHall = halls.find((hall: any) => hall.id === value);
+  const handleHallChange = (value: string) => {
+    const selectedHall = halls.find((hall) => hall.id === value);
     if (selectedHall) {
       setHallId(value);
-      setSelectedTerms(selectedHall.terms);
-      setPrice(isMember ? selectedDay?.memberPrice : selectedDay?.basePrice);
+      setSelectedTerms(selectedHall.terms || []);
     }
   };
 
-  const handleDayChange = (value: any) => {
-    const selected = daysOfWeek.find((day: any) => day.value === value);
+  const handleDayChange = (value: string) => {
+    const selected = daysOfWeek.find((day) => day.value === value);
     if (selected) {
       setSelectedDay(selected);
-      setPrice(isMember ? selected.memberPrice : selected.basePrice);
+      setPrice(String(isMember ? selected.memberPrice : selected.basePrice));
     }
   };
 
-  const userDataString2 = Cookies.get('userData');
-  const userData = userDataString2 ? JSON.parse(userDataString2) : null;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-
-    // Comprehensive validation
     if (!fullName || !selectedDay || !phoneNumber || !email || !hallId || !termsAccepted || !selectedDate || !endDate) {
-      setNotification({ visible: true, message: 'Please fill in all required fields and accept the terms.', color: 'red' });
+      toast.error('Please fill in all required fields and accept the terms.');
       return;
     }
-
-    // Validate full name format
     if (!validateFullName(fullName)) {
-      setNotification({ visible: true, message: 'Full name should only contain letters and spaces', color: 'red' });
+      toast.error('Full name should only contain letters and spaces');
       return;
     }
-
-    // Validate phone numbers
     if (!validatePhone(phoneNumber)) {
-      setNotification({ visible: true, message: 'Please enter a valid Ethiopian phone number', color: 'red' });
+      toast.error('Please enter a valid Ethiopian phone number');
       return;
     }
-
     if (alternativePhoneNumber && !validatePhone(alternativePhoneNumber)) {
-      setNotification({ visible: true, message: 'Please enter a valid alternative phone number', color: 'red' });
+      toast.error('Please enter a valid alternative phone number');
       return;
     }
-
-    // Validate dates
     if (!isFutureDate(selectedDate)) {
-      setNotification({ visible: true, message: 'Start date must be today or a future date', color: 'red' });
+      toast.error('Start date must be today or a future date');
+      return;
+    }
+    if (dayjs(endDate).isBefore(dayjs(selectedDate))) {
+      toast.error('End date must be on or after start date');
       return;
     }
 
-    if (dayjs(endDate).isBefore(dayjs(selectedDate))) {
-      setNotification({ visible: true, message: 'End date must be on or after start date', color: 'red' });
-      return;
-    }
+    const userDataString = Cookies.get('userData');
+    const userData = userDataString ? JSON.parse(userDataString) : null;
 
     setLoading(true);
-    const body = {
-      hallId,
-      startDateTime: selectedDate.toISOString(),
-      endDateTime: endDate.toISOString(),
-      customerName: fullName,
-      email,
-      phone: phoneNumber,
-      alternativePhoneNumber,
-      specialRequests,
-      termsAccepted,
-      member: isMember,
-      promoCode: isMember ? selectedPromoCode : '',
-      userId: userData?.userId,
-      purpose,
-      eventName,
-    };
-
     try {
-      const response = await fetch('https://hall-api.hohitebirhan.com/api/v1/book/bookings', {
+      const response = await fetch(`${API_BASE}/book/bookings`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${userDataA?.access_token}`
-        },
-        body: JSON.stringify(body),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userData?.access_token}` },
+        body: JSON.stringify({
+          hallId,
+          startDateTime: new Date(selectedDate).toISOString(),
+          endDateTime: new Date(endDate).toISOString(),
+          customerName: fullName,
+          email,
+          phone: phoneNumber,
+          alternativePhoneNumber,
+          specialRequests,
+          termsAccepted,
+          member: isMember,
+          promoCode: isMember ? selectedPromoCode : '',
+          userId: userData?.userId,
+          purpose,
+          eventName,
+        }),
       });
 
-          if (response.status === 401 || response.status === 403 ) {
-    removeAuthData();
-    window.location.href = '/login';
-    throw new Error('Session expired');
-  }
+      if (response.status === 401 || response.status === 403) {
+        handleUnauthorized();
+        return;
+      }
+
+      const data = await response.json().catch(() => ({}));
       if (response.ok) {
-        const data = await response.json();
-        setNotification({ visible: true, message: data.message, color: 'green' });
-        // Reset form on success
+        toast.success(data?.message || 'Booking created successfully.');
         setFullName('');
         setSelectedDay(null);
-        setSelectedDate(null);
-        setEndDate(null);
+        setSelectedDate('');
+        setEndDate('');
         setPhoneNumber('');
         setAlternativePhoneNumber('');
         setEmail('');
@@ -343,228 +207,207 @@ export default function MyForm() {
         setTermsAccepted(false);
         setPurpose('');
         setEventName('');
+        setPrice('');
       } else {
-        const errorData = await response.json();
-        setNotification({ visible: true, message: `Error: ${errorData.message}`, color: 'red' });
+        toast.error(`Error: ${data?.message}`);
       }
-    } catch (error) {
-      setNotification({ visible: true, message: 'Network error. Please try again.', color: 'red' });
+    } catch {
+      toast.error('Network error. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
+  const hallOptions: SelectOption[] = halls.map((h) => ({ value: h.id, label: h.name }));
+
   return (
-    <Container style={{ marginTop: 40, alignSelf: 'center' }}>
-      <Title order={2}>BOOK VENUE</Title>
-      {notification.visible && (
-        <Notification color={notification.color} onClose={() => setNotification({ ...notification, visible: false })}>
-          {notification.message}
-        </Notification>
-      )}
-      {loading && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          backgroundColor: 'rgba(255, 255, 255, 0.8)',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          zIndex: 1000,
-        }}>
-          <Loader size="xl" />
-        </div>
-      )}
-      <form onSubmit={handleSubmit}>
-        <Grid>
-          <Grid.Col span={6}>
-            <TextInput
-              label="Full Name"
-              placeholder="Enter your full name"
-              value={fullName}
-              onChange={(event) => handleFullNameChange(event.currentTarget.value)}
-              style={{ marginTop: 10, maxWidth: 300 }}
-              required
-              error={fullNameError}
-            />
-          </Grid.Col>
-          <Grid.Col span={6}>
-            <Select
-              label="Select Hall"
-              placeholder="Choose a hall"
-              data={halls.map((hall: any) => ({ value: hall.id, label: hall.name }))}
-              value={hallId}
-              onChange={handleHallChange}
-              style={{ marginTop: 10, maxWidth: 300 }}
-              required
-            />
-          </Grid.Col>
-          <Grid.Col span={6}>
-            <Select
-              label="Select Day of the Week"
-              placeholder="Select a day"
-              data={daysOfWeek}
-              value={selectedDay?.value}
-              onChange={handleDayChange}
-              style={{ marginTop: 10, maxWidth: 300 }}
-              required
-            />
-          </Grid.Col>
-          <Grid.Col span={6}>
-            <TextInput
-              label="Phone Number"
-              placeholder="Enter your phone number"
-              value={phoneNumber}
-              onChange={(event) => handlePhoneChange(event.currentTarget.value)}
-              style={{ marginTop: 10, maxWidth: 300 }}
-              required
-              error={phoneError}
-            />
-          </Grid.Col>
-          <Grid.Col span={6}>
-            <TextInput
-              label="Alternative Phone Number"
-              placeholder="Enter alternative phone number"
-              value={alternativePhoneNumber}
-              onChange={(event) => handleAltPhoneChange(event.currentTarget.value)}
-              style={{ marginTop: 10, maxWidth: 300 }}
-              error={altPhoneError}
-            />
-          </Grid.Col>
-          <Grid.Col span={6}>
-            <TextInput
-              label="Email"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(event) => setEmail(event.currentTarget.value)}
-              required
-              type="email"
-              style={{ marginTop: 10, maxWidth: 300 }}
-            />
-          </Grid.Col>
-          <Grid.Col span={6}>
-            <TextInput
-              label="Special Requests"
-              placeholder="Any special requests?"
-              value={specialRequests}
-              onChange={(event) => setSpecialRequests(event.currentTarget.value)}
-              style={{ marginTop: 10, maxWidth: 300 }}
-            />
-          </Grid.Col>
-          <Grid.Col span={6}>
-            <TextInput
-              label="Price for the selected day"
-              placeholder="Price"
-              disabled
-              value={price}
-              style={{ marginTop: 10, maxWidth: 300 }}
-              required
-            />
-          </Grid.Col>
-          <Grid.Col span={6}>
-            <TextInput
-              label="Purpose of Booking"
-              placeholder="e.g., Wedding, Conference"
-              value={purpose}
-              onChange={(event) => setPurpose(event.currentTarget.value)}
-              style={{ marginTop: 10, maxWidth: 300 }}
-              required
-            />
-          </Grid.Col>
-          <Grid.Col span={6}>
-            <TextInput
-              label="Event Name"
-              placeholder="e.g., Ato Abel and Wro Chini Wedding"
-              value={eventName}
-              onChange={(event) => setEventName(event.currentTarget.value)}
-              style={{ marginTop: 10, maxWidth: 300 }}
-              required
-            />
-          </Grid.Col>
-          <Grid.Col span={6}>
-            <DateTimePicker
-              locale="am"
-              label="Start Date"
-              placeholder="Select start date"
-              value={selectedDate}
-              onChange={handleStartDateChange}
-              style={{ marginTop: 10, maxWidth: 300 }}
-              required
-              error={dateError}
-              minDate={new Date()} // Prevents selecting past dates in the picker
-            />
-          </Grid.Col>
-          <Grid.Col span={6}>
-            <DateTimePicker
-              locale="am"
-              label="End Date"
-              placeholder="Select end date"
-              value={endDate}
-              onChange={handleEndDateChange}
-              style={{ marginTop: 10, maxWidth: 300 }}
-              required
-              minDate={selectedDate || new Date()} // Ensures end date can't be before start date
-              error={endDateError}
-            />
-          </Grid.Col>
-        </Grid>
+    <>
+      <Card className="mx-auto max-w-3xl animate-fade-in-up">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CalendarPlus className="h-5 w-5 text-primary" />
+            Book Venue
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="fullName">Full Name</Label>
+                <Input
+                  id="fullName"
+                  value={fullName}
+                  onChange={(e) => {
+                    setFullName(e.target.value);
+                    setFullNameError(!validateFullName(e.target.value) ? 'Letters and spaces only' : '');
+                  }}
+                  required
+                />
+                {fullNameError && <p className="text-xs text-destructive">{fullNameError}</p>}
+              </div>
 
-        <div style={{ marginTop: 20 }}>
-          <Button onClick={() => setModalOpened(true)}>View Terms</Button>
-        </div>
+              <div className="space-y-1.5">
+                <Label>Select Hall</Label>
+                <Select options={hallOptions} placeholder="Choose a hall" value={hallId} onValueChange={handleHallChange} required />
+              </div>
 
-        <Checkbox
-          label="I'm a member"
-          checked={isMember}
-          onChange={(event) => {
-            const isChecked = event.currentTarget.checked;
-            setIsMember(isChecked);
-            setPrice(isChecked && selectedDay ? selectedDay.memberPrice : selectedDay ? selectedDay.basePrice : '');
-          }}
-          style={{ marginTop: 20 }}
-        />
+              <div className="space-y-1.5">
+                <Label>Select Day of the Week</Label>
+                <Select
+                  options={daysOfWeek}
+                  placeholder="Select a day"
+                  value={selectedDay?.value || ''}
+                  onValueChange={handleDayChange}
+                  required
+                />
+              </div>
 
-        {isMember && (
-          <Select
-            label="Select Promo Code"
-            placeholder="Choose a promo code"
-            data={promoCodes}
-            value={selectedPromoCode}
-            onChange={setSelectedPromoCode}
-            style={{ marginTop: 10, maxWidth: 300 }}
-          />
-        )}
+              <div className="space-y-1.5">
+                <Label htmlFor="phoneNumber">Phone Number</Label>
+                <Input
+                  id="phoneNumber"
+                  value={phoneNumber}
+                  onChange={(e) => {
+                    setPhoneNumber(e.target.value);
+                    setPhoneError(!validatePhone(e.target.value) ? 'Enter a valid Ethiopian phone number' : '');
+                  }}
+                  required
+                />
+                {phoneError && <p className="text-xs text-destructive">{phoneError}</p>}
+              </div>
 
-        <Group justify="right" mt="md">
-          <Button type="submit">BOOK</Button>
-        </Group>
-      </form>
+              <div className="space-y-1.5">
+                <Label htmlFor="altPhone">Alternative Phone Number</Label>
+                <Input
+                  id="altPhone"
+                  value={alternativePhoneNumber}
+                  onChange={(e) => {
+                    setAlternativePhoneNumber(e.target.value);
+                    setAltPhoneError(!validatePhone(e.target.value) ? 'Enter a valid phone number' : '');
+                  }}
+                />
+                {altPhoneError && <p className="text-xs text-destructive">{altPhoneError}</p>}
+              </div>
 
-      {/* Modal for Terms and Conditions */}
-      <Modal
-        opened={modalOpened}
-        onClose={() => setModalOpened(false)}
-        title="Terms and Conditions"
-        size="lg"
-      >
-        {selectedTerms.length > 0 ? (
-          selectedTerms.map((term: any) => (
-            <Text key={term.id}>{term.termsText}</Text>
-          ))
-        ) : (
-          <Text>No terms available for the selected hall.</Text>
-        )}
-        <Group justify="right" mt="md">
-          <Button onClick={() => {
-            setTermsAccepted(true);
-            setModalOpened(false);
-          }}>Accept</Button>
-          <Button onClick={() => setModalOpened(false)}>Decline</Button>
-        </Group>
-      </Modal>
-    </Container>
+              <div className="space-y-1.5">
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="specialRequests">Special Requests</Label>
+                <Input id="specialRequests" value={specialRequests} onChange={(e) => setSpecialRequests(e.target.value)} />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="price">Price for the selected day</Label>
+                <Input id="price" disabled value={price} />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="purpose">Purpose of Booking</Label>
+                <Input id="purpose" placeholder="e.g., Wedding, Conference" value={purpose} onChange={(e) => setPurpose(e.target.value)} required />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="eventName">Event Name</Label>
+                <Input id="eventName" value={eventName} onChange={(e) => setEventName(e.target.value)} required />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="startDate">Start Date & Time</Label>
+                <Input
+                  id="startDate"
+                  type="datetime-local"
+                  value={selectedDate}
+                  onChange={(e) => {
+                    setSelectedDate(e.target.value);
+                    setDateError(!isFutureDate(e.target.value) ? 'Start date must be today or later' : '');
+                  }}
+                  required
+                />
+                {dateError && <p className="text-xs text-destructive">{dateError}</p>}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="endDate">End Date & Time</Label>
+                <Input
+                  id="endDate"
+                  type="datetime-local"
+                  value={endDate}
+                  onChange={(e) => {
+                    setEndDate(e.target.value);
+                    setEndDateError(
+                      e.target.value && selectedDate && dayjs(e.target.value).isBefore(dayjs(selectedDate))
+                        ? 'End date must be on or after start date'
+                        : ''
+                    );
+                  }}
+                  required
+                />
+                {endDateError && <p className="text-xs text-destructive">{endDateError}</p>}
+              </div>
+            </div>
+
+            <Button type="button" variant="outline" onClick={() => setModalOpened(true)}>
+              View Terms
+            </Button>
+
+            <label className="flex items-center gap-2 text-sm">
+              <Checkbox
+                checked={isMember}
+                onCheckedChange={(checked) => {
+                  const isChecked = !!checked;
+                  setIsMember(isChecked);
+                  setPrice(String(selectedDay ? (isChecked ? selectedDay.memberPrice : selectedDay.basePrice) : ''));
+                }}
+              />
+              I&apos;m a member
+            </label>
+
+            {isMember && (
+              <div className="max-w-xs space-y-1.5">
+                <Label>Select Promo Code</Label>
+                <Select options={promoCodes} placeholder="Choose a promo code" value={selectedPromoCode} onValueChange={setSelectedPromoCode} />
+              </div>
+            )}
+
+            <div className="flex justify-end">
+              <Button type="submit" loading={loading}>
+                Book
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Dialog open={modalOpened} onOpenChange={setModalOpened}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Terms and Conditions</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-80 space-y-2 overflow-y-auto text-sm text-muted-foreground">
+            {selectedTerms.length > 0 ? (
+              selectedTerms.map((term) => <p key={term.id}>{term.termsText}</p>)
+            ) : (
+              <p>No terms available for the selected hall.</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setModalOpened(false)}>
+              Decline
+            </Button>
+            <Button
+              onClick={() => {
+                setTermsAccepted(true);
+                setModalOpened(false);
+              }}
+            >
+              Accept
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

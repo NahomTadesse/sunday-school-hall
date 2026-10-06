@@ -1,202 +1,55 @@
+import type { Metadata } from 'next';
+import { Plus_Jakarta_Sans } from 'next/font/google';
+import './globals.css';
+import { ThemeProvider } from '@/contexts/ThemeContext';
+import { LanguageProvider } from '@/contexts/LanguageContext';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { AppShell } from '@/components/shell/AppShell';
+import { Toaster } from '@/components/ui/sonner';
 
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  variable: '--font-sans',
+  display: 'swap',
+});
 
-// // "use client";
-// // import '@mantine/core/styles.css';
-// // import React, { useEffect } from 'react';
-// // import { ColorSchemeScript, mantineHtmlProps, MantineProvider } from '@mantine/core';
-// // import { theme } from '../theme';
-// // import { NavbarNested } from '../components/Navbar/NavbarNested';
-// // import { FooterLinks } from '../components/Footer/FooterLinks';
-// // import { usePathname, useRouter } from 'next/navigation';
-// // import AuthGuard from '../components/AuthGuard';
-// // import { isAuthenticated } from '../app/utils/auth';
+export const metadata: Metadata = {
+  title: 'Sunday School — Hall Dashboard',
+  description: 'Hall & booking management dashboard',
+  icons: { icon: '/favicon.svg' },
+};
 
-// // export default function RootLayout({ children }: { children: React.ReactNode }) {
-// //   const pathname = usePathname();
-// //   const router = useRouter();
-// //   const authenticated = isAuthenticated();
-
-// //   // Check for both root (/) and /login as login pages
-// //   const isLoginPage = pathname === '/' || pathname === '/login';
-// //   const isForgetPage = pathname === '/forgetpass';
-// //   const showNavbar = authenticated && !isLoginPage && !isForgetPage;
-
-// //   // Redirect to /stat if user is authenticated and trying to access login pages
-// //   useEffect(() => {
-// //     if (authenticated && (isLoginPage || isForgetPage)) {
-// //       router.push('/stat');
-// //     }
-// //   }, [authenticated, isLoginPage, isForgetPage, router]);
-
-// //   return (
-// //     <html lang="en" {...mantineHtmlProps}>
-// //       <head>
-// //         <ColorSchemeScript />
-// //         <link rel="shortcut icon" href="/favicon.svg" />
-// //         <meta
-// //           name="viewport"
-// //           content="minimum-scale=1, initial-scale=1, width=device-width, user-scalable=no"
-// //         />
-// //       </head>
-// //       <body>
-// //         <MantineProvider theme={theme}>
-// //           <AuthGuard>
-// //             {showNavbar ? (
-// //               <div style={{ display: 'flex', height: '100vh' }}>
-// //                 <NavbarNested />
-// //                 <main style={{ flexGrow: 1, padding: '20px', overflowY: 'auto' }}>
-// //                   <div style={{ height: 'calc(100vh - 100px)', overflowY: 'auto' }}>
-// //                     {children}
-// //                   </div>
-// //                 </main>
-// //               </div>
-// //             ) : (
-// //               // For login and forget password pages, render without navbar
-// //               <div>
-// //                 {children}
-// //               </div>
-// //             )}
-// //             <FooterLinks />
-// //           </AuthGuard>
-// //         </MantineProvider>
-// //       </body>
-// //     </html>
-// //   );
-// // }
-
-
-// // app/layout.tsx - only change the useEffect part
-// "use client";
-// import '@mantine/core/styles.css';
-// import React, { useEffect } from 'react';
-// import { ColorSchemeScript, mantineHtmlProps, MantineProvider } from '@mantine/core';
-// import { theme } from '../theme';
-// import { NavbarNested } from '../components/Navbar/NavbarNested';
-// import { FooterLinks } from '../components/Footer/FooterLinks';
-// import { usePathname, useRouter } from 'next/navigation';
-// import AuthGuard from '../components/AuthGuard';
-// import { isAuthenticated, removeAuthData } from '../app/utils/auth';
-
-// export default function RootLayout({ children }: { children: React.ReactNode }) {
-//   const pathname = usePathname();
-//   const router = useRouter();
-  
-//   // Check authentication on every render/route change
-//   const authenticated = isAuthenticated(); // This now checks expiry
-//   const isLoginPage = pathname === '/' || pathname === '/login';
-//   const isForgetPage = pathname === '/forgetpass';
-//   const showNavbar = authenticated && !isLoginPage && !isForgetPage;
-
-//   // Handle redirects
-//   useEffect(() => {
-//     // If not authenticated and trying to access protected page
-//     if (!authenticated && !isLoginPage && !isForgetPage) {
-//       removeAuthData();
-//       router.push('/login');
-//     }
-    
-//     // If authenticated and on login page
-//     if (authenticated && (isLoginPage || isForgetPage)) {
-//       router.push('/stat');
-//     }
-//   }, [authenticated, pathname, router, isLoginPage, isForgetPage]);
-
-//   return (
-//     <html lang="en" {...mantineHtmlProps}>
-//       <head>
-//         <ColorSchemeScript />
-//         <link rel="shortcut icon" href="/favicon.svg" />
-//         <meta
-//           name="viewport"
-//           content="minimum-scale=1, initial-scale=1, width=device-width, user-scalable=no"
-//         />
-//       </head>
-//       <body>
-//         <MantineProvider theme={theme}>
-//           <AuthGuard>
-//             {showNavbar ? (
-//               <div style={{ display: 'flex', height: '100vh' }}>
-//                 <NavbarNested />
-//                 <main style={{ flexGrow: 1, padding: '20px', overflowY: 'auto' }}>
-//                   <div style={{ height: 'calc(100vh - 100px)', overflowY: 'auto' }}>
-//                     {children}
-//                   </div>
-//                 </main>
-//               </div>
-//             ) : (
-//               <div>
-//                 {children}
-//               </div>
-//             )}
-//             <FooterLinks />
-//           </AuthGuard>
-//         </MantineProvider>
-//       </body>
-//     </html>
-//   );
-// }
-
-
-"use client";
-import '@mantine/core/styles.css';
-import React, { useEffect } from 'react';
-import { ColorSchemeScript, mantineHtmlProps, MantineProvider } from '@mantine/core';
-import { theme } from '../theme';
-import { NavbarNested } from '../components/Navbar/NavbarNested';
-import { FooterLinks } from '../components/Footer/FooterLinks';
-import { usePathname, useRouter } from 'next/navigation';
-import AuthGuard from '../components/AuthGuard';
-import { isAuthenticated } from '../app/utils/auth';
+// Runs before React hydrates so the correct theme class is present on
+// <html> immediately — avoids a light/dark flash on load.
+const noFlashScript = `
+(function () {
+  try {
+    var match = document.cookie.match(/(?:^|; )app_theme=([^;]*)/);
+    var theme = match ? decodeURIComponent(match[1]) : null;
+    if (!theme) {
+      theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    if (theme === 'dark') document.documentElement.classList.add('dark');
+  } catch (e) {}
+})();
+`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  const router = useRouter();
-  
-  const authenticated = isAuthenticated();
-  const isLoginPage = pathname === '/login' || pathname === '/';
-  const isForgetPage = pathname === '/forgetpass';
-  const showNavbar = authenticated && !isLoginPage && !isForgetPage;
-
-  useEffect(() => {
-    // If not authenticated and trying to access protected page
-    if (!authenticated && !isLoginPage && !isForgetPage) {
-      router.push('/login');
-    }
-    
-    // If authenticated and on login page
-    if (authenticated && isLoginPage) {
-      router.push('/stat');
-    }
-  }, [authenticated, pathname, router]);
-
   return (
-    <html lang="en" {...mantineHtmlProps}>
+    <html lang="en" suppressHydrationWarning className={jakarta.variable}>
       <head>
-        <ColorSchemeScript />
-        <link rel="shortcut icon" href="/favicon.svg" />
-        <meta
-          name="viewport"
-          content="minimum-scale=1, initial-scale=1, width=device-width, user-scalable=no"
-        />
+        <meta name="viewport" content="minimum-scale=1, initial-scale=1, width=device-width" />
+        <script dangerouslySetInnerHTML={{ __html: noFlashScript }} />
       </head>
-      <body>
-        <MantineProvider theme={theme}>
-          <AuthGuard>
-            {showNavbar ? (
-              <div style={{ display: 'flex', height: '100vh' }}>
-                <NavbarNested />
-                <main style={{ flexGrow: 1, padding: '20px', overflowY: 'auto' }}>
-                  <div style={{ height: 'calc(100vh - 100px)', overflowY: 'auto' }}>
-                    {children}
-                  </div>
-                </main>
-              </div>
-            ) : (
-              <div>{children}</div>
-            )}
-            <FooterLinks />
-          </AuthGuard>
-        </MantineProvider>
+      <body className="font-sans">
+        <ThemeProvider>
+          <LanguageProvider>
+            <AuthProvider>
+              <AppShell>{children}</AppShell>
+              <Toaster position="top-center" richColors closeButton />
+            </AuthProvider>
+          </LanguageProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

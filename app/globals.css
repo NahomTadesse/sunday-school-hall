@@ -1,0 +1,98 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222 47% 8%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 8%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 8%;
+    --primary: 221 83% 40%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 20% 95%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 220 20% 95%;
+    --muted-foreground: 220 9% 46%;
+    --accent: 221 70% 95%;
+    --accent-foreground: 221 83% 30%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 15% 89%;
+    --input: 220 15% 89%;
+    --ring: 221 83% 40%;
+    --radius: 0.65rem;
+
+    --sidebar-background: 222 47% 8%;
+    --sidebar-foreground: 220 20% 88%;
+    --sidebar-border: 222 35% 16%;
+    --sidebar-accent: 221 83% 45%;
+    --sidebar-accent-foreground: 0 0% 100%;
+  }
+
+  .dark {
+    --background: 222 47% 6%;
+    --foreground: 220 20% 94%;
+    --card: 222 40% 9%;
+    --card-foreground: 220 20% 94%;
+    --popover: 222 40% 9%;
+    --popover-foreground: 220 20% 94%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 222 47% 6%;
+    --secondary: 222 30% 14%;
+    --secondary-foreground: 220 20% 94%;
+    --muted: 222 30% 14%;
+    --muted-foreground: 220 10% 65%;
+    --accent: 217 50% 18%;
+    --accent-foreground: 217 91% 80%;
+    --destructive: 0 63% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 222 25% 16%;
+    --input: 222 25% 16%;
+    --ring: 217 91% 60%;
+
+    --sidebar-background: 224 47% 4%;
+    --sidebar-foreground: 220 20% 88%;
+    --sidebar-border: 222 35% 12%;
+    --sidebar-accent: 217 91% 60%;
+    --sidebar-accent-foreground: 222 47% 6%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+}
+
+/* Smooth page transition */
+.page-transition {
+  animation: fade-in-up 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Amharic script needs a touch more line-height for comfortable reading */
+[lang='am'] body,
+.font-amharic {
+  line-height: 1.75;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.4);
+}
