@@ -98,5 +98,8 @@
   "calendar.calendarView": "Calendar",
   "calendar.today": "Today",
   "calendar.noEvents": "No schedules this day",
-  "calendar.eventsOn": "Schedules on"
+  "calendar.eventsOn": "Schedules on",
+  "calendar.allDay": "All day",
+  "calendar.continuous": "Continuous",
+  "calendar.dailyWindow": "Daily window"
 }

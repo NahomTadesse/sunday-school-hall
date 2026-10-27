@@ -13,11 +13,16 @@ export interface CalendarEvent {
   start: Date;
   end: Date;
   status?: string;
+  /** Only meaningful for recurring schedules: CONTINUOUS | DAILY_WINDOW */
+  spanMode?: string;
+  recurrenceType?: string;
 }
 
 const statusDot: Record<string, string> = {
   PENDING: 'bg-amber-500',
   CONFIRMED: 'bg-emerald-500',
+  EXPIRED: 'bg-muted-foreground',
+  UNEXPECTED: 'bg-red-500',
   REJECTED: 'bg-red-500',
   CANCELLED: 'bg-muted-foreground',
 };
@@ -32,18 +37,40 @@ function eventCoversDay(event: CalendarEvent, day: Date) {
   return event.start <= dayEnd && event.end >= dayStart;
 }
 
+const fmtTime = (d: Date) => d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+
+/**
+ * Time label shown for an event on a given day.
+ * - single-day event: "09:00 – 11:00"
+ * - DAILY_WINDOW spanning several days: the same daily window on every day
+ * - CONTINUOUS spanning several days: starts on the first day, runs all day in between, ends on the last day
+ */
+function timeLabelForDay(event: CalendarEvent, day: Date, allDayLabel: string) {
+  if (isSameDay(event.start, event.end)) return `${fmtTime(event.start)} – ${fmtTime(event.end)}`;
+  if (event.spanMode === 'DAILY_WINDOW') return `${fmtTime(event.start)} – ${fmtTime(event.end)}`;
+  if (isSameDay(day, event.start)) return `${fmtTime(event.start)} →`;
+  if (isSameDay(day, event.end)) return `→ ${fmtTime(event.end)}`;
+  return allDayLabel;
+}
+
 export function MonthCalendar({
   events,
   weekdayLabels,
   todayLabel,
   noEventsLabel,
   eventsOnLabel,
+  allDayLabel,
+  continuousLabel,
+  dailyWindowLabel,
 }: {
   events: CalendarEvent[];
   weekdayLabels?: string[];
   todayLabel?: string;
   noEventsLabel?: string;
   eventsOnLabel?: string;
+  allDayLabel?: string;
+  continuousLabel?: string;
+  dailyWindowLabel?: string;
 }) {
   const today = useMemo(() => new Date(), []);
   const [cursor, setCursor] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
@@ -168,11 +195,19 @@ export function MonthCalendar({
                   <p className="truncate font-medium">{e.title}</p>
                   {e.subtitle && <p className="truncate text-xs text-muted-foreground">{e.subtitle}</p>}
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    {e.start.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })} –{' '}
-                    {e.end.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                    {timeLabelForDay(e, selectedDay, allDayLabel ?? 'All day')}
                   </p>
                 </div>
-                {e.status && <Badge variant="secondary">{e.status}</Badge>}
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  {e.status && <Badge variant="secondary">{e.status}</Badge>}
+                  {e.spanMode && !isSameDay(e.start, e.end) && (
+                    <Badge variant="outline" className="text-[10px]">
+                      {e.spanMode === 'DAILY_WINDOW'
+                        ? (dailyWindowLabel ?? 'Daily window')
+                        : (continuousLabel ?? 'Continuous')}
+                    </Badge>
+                  )}
+                </div>
               </li>
             ))}
           </ul>

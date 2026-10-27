@@ -98,5 +98,8 @@
   "calendar.calendarView": "የቀን መቁጠሪያ",
   "calendar.today": "ዛሬ",
   "calendar.noEvents": "በዚህ ቀን መርሃ ግብር የለም",
-  "calendar.eventsOn": "መርሃ ግብሮች በ"
+  "calendar.eventsOn": "መርሃ ግብሮች በ",
+  "calendar.allDay": "ሙሉ ቀን",
+  "calendar.continuous": "ተከታታይ",
+  "calendar.dailyWindow": "የዕለት መስኮት"
 }

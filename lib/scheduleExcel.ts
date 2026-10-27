@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx';
 
 export const RECURRENCE_TYPES = ['NONE', 'DAILY', 'WEEKLY', 'MONTHLY'] as const;
+export const SPAN_MODES = ['CONTINUOUS', 'DAILY_WINDOW'] as const;
 export const WEEK_DAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'] as const;
 
 export interface HallRef {
@@ -18,6 +19,7 @@ export interface BulkScheduleItem {
   recurrenceType: string;
   recurrenceEndDate?: string;
   daysOfWeek?: string[];
+  spanMode?: string;
 }
 
 export interface ParsedRow {
@@ -36,6 +38,7 @@ const HEADERS = [
   'Recurrence Type',
   'Recurrence End Date',
   'Days Of Week',
+  'Span Mode',
 ];
 
 /** Builds and downloads the Excel template (sheet 1 = data, sheet 2 = help, sheet 3 = halls). */
@@ -45,7 +48,7 @@ export function downloadTemplate(halls: HallRef[]) {
   const sampleHall = halls[0]?.name ?? 'Main Hall';
   const rows = [
     HEADERS,
-    ['2026-10-05 09:00', '2026-10-05 11:00', 'Sunday service rehearsal', 'Tv, Projector', sampleHall, 'NONE', '', ''],
+    ['2026-10-05 09:00', '2026-10-05 11:00', 'Sunday service rehearsal', 'Tv, Projector', sampleHall, 'NONE', '', '', ''],
     [
       '2026-10-06 18:00',
       '2026-10-06 20:00',
@@ -55,10 +58,11 @@ export function downloadTemplate(halls: HallRef[]) {
       'WEEKLY',
       '2026-12-31',
       'MONDAY, WEDNESDAY',
+      'DAILY_WINDOW',
     ],
   ];
   const ws = XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols'] = [18, 18, 32, 20, 22, 18, 20, 30].map((wch) => ({ wch }));
+  ws['!cols'] = [18, 18, 32, 20, 22, 18, 20, 30, 18].map((wch) => ({ wch }));
   XLSX.utils.book_append_sheet(wb, ws, 'Schedules');
 
   const help = [
@@ -71,6 +75,7 @@ export function downloadTemplate(halls: HallRef[]) {
     ['Recurrence Type', 'No', `One of: ${RECURRENCE_TYPES.join(', ')} (blank = NONE)`],
     ['Recurrence End Date', 'If recurring', 'YYYY-MM-DD'],
     ['Days Of Week', 'If WEEKLY', `Comma separated: ${WEEK_DAYS.join(', ')}`],
+    ['Span Mode', 'No', `If recurring, one of: ${SPAN_MODES.join(', ')} (blank = CONTINUOUS). CONTINUOUS runs from start to end without breaks; DAILY_WINDOW repeats the start-to-end time of day as a daily window`],
     [],
     ['Tip', '', 'Delete the two example rows before uploading your own data.'],
   ];
@@ -135,6 +140,8 @@ const KEYS: Record<string, string> = {
   recurrenceend: 'recurrenceEnd',
   daysofweek: 'days',
   days: 'days',
+  spanmode: 'spanMode',
+  span: 'spanMode',
 };
 
 export async function parseScheduleFile(file: File, halls: HallRef[]): Promise<ParsedRow[]> {
@@ -169,6 +176,7 @@ export async function parseScheduleFile(file: File, halls: HallRef[]): Promise<P
     const recurrenceType = (String(row.recurrenceType ?? '').trim().toUpperCase() || 'NONE') as string;
     const recEnd = toDate(row.recurrenceEnd);
     const days = list(row.days).map((d) => d.toUpperCase());
+    const spanMode = String(row.spanMode ?? '').trim().toUpperCase().replace(/[\s-]+/g, '_') || 'CONTINUOUS';
 
     if (!start) errors.push('Invalid Start Time');
     if (!end) errors.push('Invalid End Time');
@@ -183,6 +191,8 @@ export async function parseScheduleFile(file: File, halls: HallRef[]): Promise<P
     if (recurrenceType === 'WEEKLY' && days.length === 0) errors.push('Days Of Week is required for WEEKLY');
     const badDay = days.find((d) => !(WEEK_DAYS as readonly string[]).includes(d));
     if (badDay) errors.push(`Unknown day "${badDay}"`);
+    if (recurring && !(SPAN_MODES as readonly string[]).includes(spanMode))
+      errors.push(`Span Mode must be one of ${SPAN_MODES.join('/')}`);
 
     let item: BulkScheduleItem | null = null;
     if (errors.length === 0 && start && end && hall) {
@@ -198,6 +208,7 @@ export async function parseScheduleFile(file: File, halls: HallRef[]): Promise<P
         recEnd.setHours(23, 59, 59, 0);
         item.recurrenceEndDate = recEnd.toISOString();
         item.daysOfWeek = days;
+        item.spanMode = spanMode;
       }
     }
 

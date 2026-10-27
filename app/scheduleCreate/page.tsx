@@ -27,6 +27,11 @@ const RECURRENCE_OPTIONS: SelectOption[] = [
   { value: 'MONTHLY', label: 'Monthly' },
 ];
 
+const SPAN_MODE_OPTIONS: SelectOption[] = [
+  { value: 'CONTINUOUS', label: 'Continuous (start to end, no breaks)' },
+  { value: 'DAILY_WINDOW', label: 'Daily window (same time slot each day)' },
+];
+
 const DAYS_OF_WEEK = [
   { value: 'MONDAY', label: 'Mon' },
   { value: 'TUESDAY', label: 'Tue' },
@@ -53,6 +58,7 @@ export default function ScheduleCreatePage() {
   const [recurrenceType, setRecurrenceType] = useState('NONE');
   const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
   const [daysOfWeek, setDaysOfWeek] = useState<string[]>([]);
+  const [spanMode, setSpanMode] = useState('CONTINUOUS');
   const isRecurring = recurrenceType !== 'NONE';
 
   useEffect(() => {
@@ -120,6 +126,7 @@ export default function ScheduleCreatePage() {
             ? {
                 ...base,
                 recurrenceType,
+                spanMode,
                 recurrenceEndDate: new Date(`${recurrenceEndDate}T23:59:59`).toISOString(),
                 daysOfWeek: recurrenceType === 'WEEKLY' ? daysOfWeek : [],
               }
@@ -143,6 +150,7 @@ export default function ScheduleCreatePage() {
         setRecurrenceType('NONE');
         setRecurrenceEndDate('');
         setDaysOfWeek([]);
+        setSpanMode('CONTINUOUS');
       } else {
         toast.error(data?.message || 'Failed to create schedule.');
       }
@@ -226,6 +234,17 @@ export default function ScheduleCreatePage() {
                 </div>
               )}
             </div>
+            {isRecurring && (
+              <div className="space-y-1.5">
+                <Label>Span mode</Label>
+                <Select options={SPAN_MODE_OPTIONS} value={spanMode} onValueChange={setSpanMode} />
+                <p className="text-xs text-muted-foreground">
+                  {spanMode === 'CONTINUOUS'
+                    ? 'Each occurrence runs without a break from the start time to the end time.'
+                    : 'Each occurrence uses only the start-to-end time of day as a daily window.'}
+                </p>
+              </div>
+            )}
             {recurrenceType === 'WEEKLY' && (
               <div className="space-y-1.5">
                 <Label>Days of week</Label>

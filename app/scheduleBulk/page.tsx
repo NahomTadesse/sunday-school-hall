@@ -166,6 +166,7 @@ export default function ScheduleBulkPage() {
                     <TableHead>Purpose</TableHead>
                     <TableHead>Hall</TableHead>
                     <TableHead>Repeat</TableHead>
+                    <TableHead>Span</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -178,6 +179,7 @@ export default function ScheduleBulkPage() {
                       <TableCell>{r.item?.purpose ?? '—'}</TableCell>
                       <TableCell>{r.hallName || '—'}</TableCell>
                       <TableCell>{r.item?.recurrenceType ?? '—'}</TableCell>
+                      <TableCell>{r.item?.spanMode ?? '—'}</TableCell>
                       <TableCell className={r.item ? 'text-emerald-600' : 'text-destructive'}>
                         {r.item ? 'OK' : r.errors.join('; ')}
                       </TableCell>

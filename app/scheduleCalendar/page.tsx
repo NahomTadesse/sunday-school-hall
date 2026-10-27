@@ -22,11 +22,17 @@ interface ScheduleItem {
   purpose: string;
   requirements: string[];
   status: string;
+  recurrenceType?: string;
+  recurrenceEndDate?: string;
+  recurrenceGroupId?: string;
+  spanMode?: string;
 }
 
 const statusVariant: Record<string, 'default' | 'success' | 'destructive' | 'secondary' | 'warning'> = {
   PENDING: 'warning',
   CONFIRMED: 'success',
+  EXPIRED: 'secondary',
+  UNEXPECTED: 'destructive',
   REJECTED: 'destructive',
   CANCELLED: 'secondary',
 };
@@ -68,6 +74,8 @@ export default function ScheduleCalendarPage() {
         start: new Date(s.startTime),
         end: new Date(s.endTime),
         status: s.status,
+        spanMode: s.spanMode,
+        recurrenceType: s.recurrenceType,
       })),
     [schedules]
   );
@@ -108,13 +116,16 @@ export default function ScheduleCalendarPage() {
                 todayLabel={t('calendar.today')}
                 noEventsLabel={t('calendar.noEvents')}
                 eventsOnLabel={t('calendar.eventsOn')}
+                allDayLabel={t('calendar.allDay')}
+                continuousLabel={t('calendar.continuous')}
+                dailyWindowLabel={t('calendar.dailyWindow')}
               />
             )}
           </TabsContent>
 
           <TabsContent value="list">
             {loading ? (
-              <SkeletonRows rows={5} cols={5} />
+              <SkeletonRows rows={5} cols={6} />
             ) : (
               <Table>
                 <TableHeader>
@@ -124,6 +135,7 @@ export default function ScheduleCalendarPage() {
                     <TableHead>Start</TableHead>
                     <TableHead>End</TableHead>
                     <TableHead>Requirements</TableHead>
+                    <TableHead>Repeat</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -140,6 +152,16 @@ export default function ScheduleCalendarPage() {
                           {new Date(s.endTime).toLocaleString()}
                         </TableCell>
                         <TableCell className="text-muted-foreground">{s.requirements?.join(', ') || '—'}</TableCell>
+                        <TableCell className="whitespace-nowrap text-sm">
+                          {s.recurrenceType && s.recurrenceType !== 'NONE' ? (
+                            <span className="flex flex-col">
+                              <span>{s.recurrenceType}</span>
+                              {s.spanMode && <span className="text-xs text-muted-foreground">{s.spanMode}</span>}
+                            </span>
+                          ) : (
+                            '—'
+                          )}
+                        </TableCell>
                         <TableCell>
                           <Badge variant={statusVariant[s.status] || 'secondary'}>{s.status}</Badge>
                         </TableCell>
@@ -147,7 +169,7 @@ export default function ScheduleCalendarPage() {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                      <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
                         {t('common.nothingFound')}
                       </TableCell>
                     </TableRow>

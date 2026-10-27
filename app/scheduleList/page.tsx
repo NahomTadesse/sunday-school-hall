@@ -42,6 +42,10 @@ interface Schedule {
   requirements: string[];
   hall: { name: string };
   status: string;
+  recurrenceType?: string;
+  recurrenceEndDate?: string;
+  recurrenceGroupId?: string;
+  spanMode?: string;
 }
 
 const UNEXPECTED_REQUIREMENT_OPTIONS = ['Projector', 'Microphone', 'Whiteboard', 'Chairs', 'Tables'].map((v) => ({
@@ -214,8 +218,8 @@ export default function ScheduleListPage() {
   const downloadPDF = () => {
     const doc = new jsPDF();
     autoTable(doc, {
-      head: [['Start Time', 'End Time', 'Purpose', 'Requirements', 'Hall Name', 'Status']],
-      body: rows.map((row) => [row.startTime, row.endTime, row.purpose, row.requirements?.join(', '), row.hall?.name, row.status]),
+      head: [['Start Time', 'End Time', 'Purpose', 'Requirements', 'Hall Name', 'Status', 'Repeat', 'Span Mode']],
+      body: rows.map((row) => [row.startTime, row.endTime, row.purpose, row.requirements?.join(', '), row.hall?.name, row.status, row.recurrenceType && row.recurrenceType !== 'NONE' ? row.recurrenceType : '', row.spanMode ?? '']),
     });
     doc.save('schedules.pdf');
   };
@@ -228,6 +232,7 @@ export default function ScheduleListPage() {
     { key: 'requirements', label: 'Requirements' },
     { key: 'hall.name', label: 'Hall Name' },
     { key: 'status', label: 'Status' },
+    { key: 'recurrenceType', label: 'Repeat' },
   ];
 
   const calendarEvents: CalendarEvent[] = rows
@@ -239,6 +244,8 @@ export default function ScheduleListPage() {
       start: new Date(row.startTime),
       end: new Date(row.endTime),
       status: row.status,
+      spanMode: row.spanMode,
+      recurrenceType: row.recurrenceType,
     }));
 
   const weekdayLabels =
@@ -289,7 +296,7 @@ export default function ScheduleListPage() {
 
             <TabsContent value="list">
               {loading ? (
-                <SkeletonRows rows={5} cols={7} />
+                <SkeletonRows rows={5} cols={8} />
               ) : (
                 <Table>
                   <TableHeader>
@@ -315,6 +322,16 @@ export default function ScheduleListPage() {
                           <TableCell>{row.hall?.name}</TableCell>
                           <TableCell>
                             <Badge variant="secondary">{row.status}</Badge>
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap text-sm">
+                            {row.recurrenceType && row.recurrenceType !== 'NONE' ? (
+                              <span className="flex flex-col">
+                                <span>{row.recurrenceType}</span>
+                                {row.spanMode && <span className="text-xs text-muted-foreground">{row.spanMode}</span>}
+                              </span>
+                            ) : (
+                              '—'
+                            )}
                           </TableCell>
                           <TableCell>
                             <DropdownMenu>
@@ -344,7 +361,7 @@ export default function ScheduleListPage() {
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
+                        <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
                           Nothing found
                         </TableCell>
                       </TableRow>
@@ -364,6 +381,9 @@ export default function ScheduleListPage() {
                   todayLabel={t('calendar.today')}
                   noEventsLabel={t('calendar.noEvents')}
                   eventsOnLabel={t('calendar.eventsOn')}
+                  allDayLabel={t('calendar.allDay')}
+                  continuousLabel={t('calendar.continuous')}
+                  dailyWindowLabel={t('calendar.dailyWindow')}
                 />
               )}
             </TabsContent>
