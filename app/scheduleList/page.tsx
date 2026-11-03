@@ -26,26 +26,21 @@ import { FacilitiesPicker } from '@/components/shared/FacilitiesPicker';
 import { MonthCalendar, type CalendarEvent } from '@/components/shared/MonthCalendar';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { handleUnauthorized } from '@/lib/api';
+import {
+  fmtDateTime,
+  getEnd,
+  getStart,
+  toApiTime,
+  toDateTimeLocalValue,
+  validateRange,
+  type ScheduleItem,
+} from '@/lib/schedule';
 
 const API_BASE = 'https://hall-api.hohitebirhan.com/api/v1';
 
 interface Hall {
   id: string;
   name: string;
-}
-
-interface Schedule {
-  id: string;
-  startTime: string;
-  endTime: string;
-  purpose: string;
-  requirements: string[];
-  hall: { name: string };
-  status: string;
-  recurrenceType?: string;
-  recurrenceEndDate?: string;
-  recurrenceGroupId?: string;
-  spanMode?: string;
 }
 
 const UNEXPECTED_REQUIREMENT_OPTIONS = ['Projector', 'Microphone', 'Whiteboard', 'Chairs', 'Tables'].map((v) => ({
@@ -63,7 +58,7 @@ export default function ScheduleListPage() {
   const { t, locale } = useLanguage();
   const [halls, setHalls] = useState<Hall[]>([]);
   const [selectedHallId, setSelectedHallId] = useState('');
-  const [scheduleData, setScheduleData] = useState<Schedule[]>([]);
+  const [scheduleData, setScheduleData] = useState<ScheduleItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<string | null>(null);
@@ -74,8 +69,11 @@ export default function ScheduleListPage() {
   const [selectedScheduleId, setSelectedScheduleId] = useState<string | null>(null);
   const [newStartTime, setNewStartTime] = useState('');
   const [newEndTime, setNewEndTime] = useState('');
+  const [unexpectedStartDate, setUnexpectedStartDate] = useState('');
   const [unexpectedStartTime, setUnexpectedStartTime] = useState('');
+  const [unexpectedEndDate, setUnexpectedEndDate] = useState('');
   const [unexpectedEndTime, setUnexpectedEndTime] = useState('');
+  const [unexpectedHallId, setUnexpectedHallId] = useState('');
   const [purpose, setPurpose] = useState('');
   const [requirements, setRequirements] = useState<string[]>([]);
 
@@ -124,7 +122,8 @@ export default function ScheduleListPage() {
           handleUnauthorized();
           return;
         }
-        setScheduleData(await response.json());
+        const data = await response.json();
+        setScheduleData(Array.isArray(data) ? data : data?.data || []);
       } catch (error) {
         console.error('Error fetching schedules:', error);
       } finally {
@@ -137,15 +136,29 @@ export default function ScheduleListPage() {
   const rows = useMemo(() => {
     const query = search.toLowerCase();
     let filtered = scheduleData.filter((row) =>
-      [row.startTime, row.endTime, row.purpose, row.requirements?.join(', '), row.hall?.name, row.status]
+      [
+        fmtDateTime(getStart(row)),
+        fmtDateTime(getEnd(row)),
+        row.purpose,
+        row.requirements?.join(', '),
+        row.hall?.name,
+        row.status,
+      ]
         .filter(Boolean)
         .some((v) => v!.toString().toLowerCase().includes(query))
     );
     if (sortBy) {
+      const sortValue = (r: ScheduleItem): string | number => {
+        if (sortBy === 'startTime') return getStart(r)?.getTime() ?? 0;
+        if (sortBy === 'endTime') return getEnd(r)?.getTime() ?? 0;
+        if (sortBy === 'hall.name') return r.hall?.name ?? '';
+        return String((r as any)[sortBy] ?? '');
+      };
       filtered = [...filtered].sort((a, b) => {
-        const av = sortBy === 'hall.name' ? a.hall?.name : (a as any)[sortBy];
-        const bv = sortBy === 'hall.name' ? b.hall?.name : (b as any)[sortBy];
-        const cmp = String(av ?? '').localeCompare(String(bv ?? ''));
+        const av = sortValue(a);
+        const bv = sortValue(b);
+        const cmp =
+          typeof av === 'number' && typeof bv === 'number' ? av - bv : String(av).localeCompare(String(bv));
         return reversed ? -cmp : cmp;
       });
     }
@@ -186,29 +199,51 @@ export default function ScheduleListPage() {
   };
 
   const handleUnexpected = async () => {
-    if (!unexpectedStartTime || !unexpectedEndTime || !purpose) return;
+    if (!unexpectedStartDate || !unexpectedStartTime || !unexpectedEndDate || !unexpectedEndTime || !purpose) {
+      toast.error('Please fill in all fields.');
+      return;
+    }
+    const hallId = unexpectedHallId || selectedHallId;
+    if (!hallId) {
+      toast.error('Choose a hall first.');
+      return;
+    }
+    const rangeError = validateRange(unexpectedStartDate, unexpectedStartTime, unexpectedEndDate, unexpectedEndTime);
+    if (rangeError) {
+      toast.error(rangeError);
+      return;
+    }
     try {
       const response = await fetch(`${API_BASE}/scheduler/unexpected`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
         body: JSON.stringify({
-          startTime: new Date(unexpectedStartTime).toISOString(),
-          endTime: new Date(unexpectedEndTime).toISOString(),
+          startDate: unexpectedStartDate,
+          endDate: unexpectedEndDate,
+          startTime: toApiTime(unexpectedStartTime),
+          endTime: toApiTime(unexpectedEndTime),
           purpose,
           requirements,
-          hallId: selectedHallId,
+          hallId,
         }),
       });
       if (response.status === 401 || response.status === 403) {
         handleUnauthorized();
         return;
       }
+      const data = await response.json().catch(() => ({}));
       if (response.ok) {
-        toast.success('Unexpected schedule created successfully!');
+        toast.success(data?.message || 'Unexpected schedule created successfully!');
         setUnexpectedOpen(false);
+        setUnexpectedStartDate('');
+        setUnexpectedStartTime('');
+        setUnexpectedEndDate('');
+        setUnexpectedEndTime('');
+        setPurpose('');
+        setRequirements([]);
         fetchAllSchedules();
       } else {
-        toast.error('Failed to create unexpected schedule.');
+        toast.error(data?.message || 'Failed to create unexpected schedule.');
       }
     } catch (error) {
       console.error('Error creating unexpected schedule:', error);
@@ -218,16 +253,16 @@ export default function ScheduleListPage() {
   const downloadPDF = () => {
     const doc = new jsPDF();
     autoTable(doc, {
-      head: [['Start Time', 'End Time', 'Purpose', 'Requirements', 'Hall Name', 'Status', 'Repeat', 'Span Mode']],
-      body: rows.map((row) => [row.startTime, row.endTime, row.purpose, row.requirements?.join(', '), row.hall?.name, row.status, row.recurrenceType && row.recurrenceType !== 'NONE' ? row.recurrenceType : '', row.spanMode ?? '']),
+      head: [['Start', 'End', 'Purpose', 'Requirements', 'Hall Name', 'Status', 'Repeat', 'Span Mode']],
+      body: rows.map((row) => [fmtDateTime(getStart(row)), fmtDateTime(getEnd(row)), row.purpose, row.requirements?.join(', '), row.hall?.name, row.status, row.recurrenceType && row.recurrenceType !== 'NONE' ? row.recurrenceType : '', row.spanMode ?? '']),
     });
     doc.save('schedules.pdf');
   };
 
   const hallOptions: SelectOption[] = halls.map((h) => ({ value: h.id, label: h.name }));
   const columns = [
-    { key: 'startTime', label: 'Start Time' },
-    { key: 'endTime', label: 'End Time' },
+    { key: 'startTime', label: 'Start' },
+    { key: 'endTime', label: 'End' },
     { key: 'purpose', label: 'Purpose' },
     { key: 'requirements', label: 'Requirements' },
     { key: 'hall.name', label: 'Hall Name' },
@@ -235,18 +270,23 @@ export default function ScheduleListPage() {
     { key: 'recurrenceType', label: 'Repeat' },
   ];
 
-  const calendarEvents: CalendarEvent[] = rows
-    .filter((row) => row.startTime && row.endTime)
-    .map((row) => ({
-      id: row.id,
-      title: row.purpose || row.hall?.name || 'Schedule',
-      subtitle: row.hall?.name,
-      start: new Date(row.startTime),
-      end: new Date(row.endTime),
-      status: row.status,
-      spanMode: row.spanMode,
-      recurrenceType: row.recurrenceType,
-    }));
+  const calendarEvents: CalendarEvent[] = rows.flatMap((row) => {
+    const start = getStart(row);
+    const end = getEnd(row);
+    if (!start || !end) return [];
+    return [
+      {
+        id: row.id,
+        title: row.purpose || row.hall?.name || 'Schedule',
+        subtitle: row.hall?.name,
+        start,
+        end,
+        status: row.status,
+        spanMode: row.spanMode,
+        recurrenceType: row.recurrenceType,
+      },
+    ];
+  });
 
   const weekdayLabels =
     locale === 'am'
@@ -315,8 +355,8 @@ export default function ScheduleListPage() {
                     {rows.length > 0 ? (
                       rows.map((row) => (
                         <TableRow key={row.id}>
-                          <TableCell>{row.startTime}</TableCell>
-                          <TableCell>{row.endTime}</TableCell>
+                          <TableCell className="whitespace-nowrap text-sm">{fmtDateTime(getStart(row)) || '—'}</TableCell>
+                          <TableCell className="whitespace-nowrap text-sm">{fmtDateTime(getEnd(row)) || '—'}</TableCell>
                           <TableCell>{row.purpose}</TableCell>
                           <TableCell className="text-muted-foreground">{row.requirements?.join(', ')}</TableCell>
                           <TableCell>{row.hall?.name}</TableCell>
@@ -344,13 +384,20 @@ export default function ScheduleListPage() {
                                 <DropdownMenuItem
                                   onClick={() => {
                                     setSelectedScheduleId(row.id);
+                                    setNewStartTime(toDateTimeLocalValue(getStart(row)));
+                                    setNewEndTime(toDateTimeLocalValue(getEnd(row)));
                                     setPostponeOpen(true);
                                   }}
                                 >
                                   <CalendarDays className="me-2 h-4 w-4" />
                                   Postpone
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setUnexpectedOpen(true)}>
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setUnexpectedHallId(row.hall?.id ?? '');
+                                    setUnexpectedOpen(true);
+                                  }}
+                                >
                                   <AlertCircle className="me-2 h-4 w-4" />
                                   Unexpected
                                 </DropdownMenuItem>
@@ -418,13 +465,37 @@ export default function ScheduleListPage() {
             <DialogTitle>Create Unexpected Schedule</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <div className="space-y-1.5">
-              <Label>Start Time</Label>
-              <Input type="datetime-local" value={unexpectedStartTime} onChange={(e) => setUnexpectedStartTime(e.target.value)} required />
-            </div>
-            <div className="space-y-1.5">
-              <Label>End Time</Label>
-              <Input type="datetime-local" value={unexpectedEndTime} onChange={(e) => setUnexpectedEndTime(e.target.value)} required />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Start Date</Label>
+                <Input
+                  type="date"
+                  value={unexpectedStartDate}
+                  onChange={(e) => {
+                    setUnexpectedStartDate(e.target.value);
+                    if (!unexpectedEndDate || unexpectedEndDate < e.target.value) setUnexpectedEndDate(e.target.value);
+                  }}
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Start Time</Label>
+                <Input type="time" value={unexpectedStartTime} onChange={(e) => setUnexpectedStartTime(e.target.value)} required />
+              </div>
+              <div className="space-y-1.5">
+                <Label>End Date</Label>
+                <Input
+                  type="date"
+                  min={unexpectedStartDate || undefined}
+                  value={unexpectedEndDate}
+                  onChange={(e) => setUnexpectedEndDate(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>End Time</Label>
+                <Input type="time" value={unexpectedEndTime} onChange={(e) => setUnexpectedEndTime(e.target.value)} required />
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label>Purpose</Label>

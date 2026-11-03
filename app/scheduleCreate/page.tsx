@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Select, type SelectOption } from '@/components/ui/select';
 import { FacilitiesPicker } from '@/components/shared/FacilitiesPicker';
 import { handleUnauthorized } from '@/lib/api';
+import { toApiTime, validateRange, type ScheduleRequestPayload } from '@/lib/schedule';
 
 const API_BASE = 'https://hall-api.hohitebirhan.com/api/v1';
 
@@ -25,6 +26,7 @@ const RECURRENCE_OPTIONS: SelectOption[] = [
   { value: 'DAILY', label: 'Daily' },
   { value: 'WEEKLY', label: 'Weekly' },
   { value: 'MONTHLY', label: 'Monthly' },
+  { value: 'YEARLY', label: 'Yearly' },
 ];
 
 const SPAN_MODE_OPTIONS: SelectOption[] = [
@@ -49,7 +51,9 @@ const REQUIREMENT_OPTIONS = [
 
 export default function ScheduleCreatePage() {
   const [halls, setHalls] = useState<Hall[]>([]);
+  const [startDate, setStartDate] = useState('');
   const [startTime, setStartTime] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [endTime, setEndTime] = useState('');
   const [purpose, setPurpose] = useState('');
   const [requirements, setRequirements] = useState<string[]>([]);
@@ -87,14 +91,30 @@ export default function ScheduleCreatePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!startTime || !endTime || !purpose || !hallId) {
+    if (!startDate || !startTime || !endDate || !endTime || !purpose || !hallId) {
       toast.error('Please fill in all fields.');
+      return;
+    }
+
+    const rangeError = validateRange(
+      startDate,
+      startTime,
+      endDate,
+      endTime,
+      isRecurring && spanMode === 'DAILY_WINDOW'
+    );
+    if (rangeError) {
+      toast.error(rangeError);
       return;
     }
 
     if (isRecurring) {
       if (!recurrenceEndDate) {
         toast.error('Please choose when the recurrence ends.');
+        return;
+      }
+      if (recurrenceEndDate < endDate) {
+        toast.error('The repeat-until date must not be before the end date.');
         return;
       }
       if (recurrenceType === 'WEEKLY' && daysOfWeek.length === 0) {
@@ -106,9 +126,12 @@ export default function ScheduleCreatePage() {
     const userDataString = Cookies.get('userData');
     const userData = userDataString ? JSON.parse(userDataString) : null;
 
-    const base = {
-      startTime: new Date(startTime).toISOString(),
-      endTime: new Date(endTime).toISOString(),
+    // Date and time are sent separately: startDate/endDate = "YYYY-MM-DD", startTime/endTime = "HH:mm:ss".
+    const base: ScheduleRequestPayload = {
+      startDate,
+      endDate,
+      startTime: toApiTime(startTime),
+      endTime: toApiTime(endTime),
       purpose,
       requirements,
       hallId,
@@ -116,9 +139,9 @@ export default function ScheduleCreatePage() {
 
     setLoading(true);
     try {
-      // One-time schedule -> POST /scheduler (array)
+      // One-time schedule -> POST /scheduler/bulk (array with one item; there is no plain POST /scheduler any more)
       // Recurring schedule -> POST /scheduler/recurring (single object)
-      const response = await fetch(`${API_BASE}/scheduler${isRecurring ? '/recurring' : ''}`, {
+      const response = await fetch(`${API_BASE}/scheduler/${isRecurring ? 'recurring' : 'bulk'}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userData?.access_token}` },
         body: JSON.stringify(
@@ -130,7 +153,7 @@ export default function ScheduleCreatePage() {
                 recurrenceEndDate: new Date(`${recurrenceEndDate}T23:59:59`).toISOString(),
                 daysOfWeek: recurrenceType === 'WEEKLY' ? daysOfWeek : [],
               }
-            : [base]
+            : [{ ...base, recurrenceType: 'NONE' }]
         ),
       });
 
@@ -142,7 +165,9 @@ export default function ScheduleCreatePage() {
       const data = await response.json().catch(() => ({}));
       if (response.ok) {
         toast.success(data?.message || 'Schedule created.');
+        setStartDate('');
         setStartTime('');
+        setEndDate('');
         setEndTime('');
         setPurpose('');
         setRequirements([]);
@@ -173,12 +198,37 @@ export default function ScheduleCreatePage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
+              <Label htmlFor="startDate">Start Date</Label>
+              <Input
+                id="startDate"
+                type="date"
+                value={startDate}
+                onChange={(e) => {
+                  setStartDate(e.target.value);
+                  // keep a single-day schedule the easy default
+                  if (!endDate || endDate < e.target.value) setEndDate(e.target.value);
+                }}
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
               <Label htmlFor="startTime">Start Time</Label>
               <Input
                 id="startTime"
-                type="datetime-local"
+                type="time"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="endDate">End Date</Label>
+              <Input
+                id="endDate"
+                type="date"
+                min={startDate || undefined}
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
                 required
               />
             </div>
@@ -186,7 +236,7 @@ export default function ScheduleCreatePage() {
               <Label htmlFor="endTime">End Time</Label>
               <Input
                 id="endTime"
-                type="datetime-local"
+                type="time"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
                 required
@@ -227,6 +277,7 @@ export default function ScheduleCreatePage() {
                   <Input
                     id="recurrenceEndDate"
                     type="date"
+                    min={endDate || undefined}
                     value={recurrenceEndDate}
                     onChange={(e) => setRecurrenceEndDate(e.target.value)}
                     required
@@ -240,8 +291,8 @@ export default function ScheduleCreatePage() {
                 <Select options={SPAN_MODE_OPTIONS} value={spanMode} onValueChange={setSpanMode} />
                 <p className="text-xs text-muted-foreground">
                   {spanMode === 'CONTINUOUS'
-                    ? 'Each occurrence runs without a break from the start time to the end time.'
-                    : 'Each occurrence uses only the start-to-end time of day as a daily window.'}
+                    ? 'Each occurrence runs without a break from the start date/time to the end date/time.'
+                    : 'Each day between the start and end date uses only the start-to-end time of day as a window.'}
                 </p>
               </div>
             )}

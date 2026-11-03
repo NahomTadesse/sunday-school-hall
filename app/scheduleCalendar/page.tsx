@@ -11,22 +11,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MonthCalendar, type CalendarEvent } from '@/components/shared/MonthCalendar';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { handleUnauthorized } from '@/lib/api';
+import { fmtDateTime, getEnd, getStart, type ScheduleItem } from '@/lib/schedule';
 
 const API_BASE = 'https://hall-api.hohitebirhan.com/api/v1';
-
-interface ScheduleItem {
-  id: string;
-  hall: { name: string };
-  startTime: string;
-  endTime: string;
-  purpose: string;
-  requirements: string[];
-  status: string;
-  recurrenceType?: string;
-  recurrenceEndDate?: string;
-  recurrenceGroupId?: string;
-  spanMode?: string;
-}
 
 const statusVariant: Record<string, 'default' | 'success' | 'destructive' | 'secondary' | 'warning'> = {
   PENDING: 'warning',
@@ -55,7 +42,8 @@ export default function ScheduleCalendarPage() {
           return;
         }
         const result = await response.json();
-        setSchedules(result?.data || []);
+        // GET /scheduler answers { success, message, data: [...] }; tolerate a bare array too
+        setSchedules(Array.isArray(result) ? result : result?.data || []);
       } catch (error) {
         console.error('Error fetching schedules:', error);
       } finally {
@@ -67,16 +55,23 @@ export default function ScheduleCalendarPage() {
 
   const events: CalendarEvent[] = useMemo(
     () =>
-      schedules.map((s) => ({
-        id: s.id,
-        title: s.purpose || s.hall?.name || 'Schedule',
-        subtitle: s.hall?.name,
-        start: new Date(s.startTime),
-        end: new Date(s.endTime),
-        status: s.status,
-        spanMode: s.spanMode,
-        recurrenceType: s.recurrenceType,
-      })),
+      schedules.flatMap((s) => {
+        const start = getStart(s);
+        const end = getEnd(s);
+        if (!start || !end) return [];
+        return [
+          {
+            id: s.id,
+            title: s.purpose || s.hall?.name || 'Schedule',
+            subtitle: s.hall?.name,
+            start,
+            end,
+            status: s.status,
+            spanMode: s.spanMode,
+            recurrenceType: s.recurrenceType,
+          },
+        ];
+      }),
     [schedules]
   );
 
@@ -146,10 +141,10 @@ export default function ScheduleCalendarPage() {
                         <TableCell className="font-medium">{s.hall?.name}</TableCell>
                         <TableCell>{s.purpose}</TableCell>
                         <TableCell className="whitespace-nowrap text-sm">
-                          {new Date(s.startTime).toLocaleString()}
+                          {fmtDateTime(getStart(s)) || '—'}
                         </TableCell>
                         <TableCell className="whitespace-nowrap text-sm">
-                          {new Date(s.endTime).toLocaleString()}
+                          {fmtDateTime(getEnd(s)) || '—'}
                         </TableCell>
                         <TableCell className="text-muted-foreground">{s.requirements?.join(', ') || '—'}</TableCell>
                         <TableCell className="whitespace-nowrap text-sm">

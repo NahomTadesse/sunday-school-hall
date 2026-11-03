@@ -34,10 +34,16 @@ function isSameDay(a: Date, b: Date) {
 function eventCoversDay(event: CalendarEvent, day: Date) {
   const dayStart = new Date(day.getFullYear(), day.getMonth(), day.getDate());
   const dayEnd = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 23, 59, 59, 999);
-  return event.start <= dayEnd && event.end >= dayStart;
+  // `end > dayStart` (not >=) so an event ending exactly at 00:00 does not leak onto the next day,
+  // while a zero-length event that starts at 00:00 is still shown on its own day.
+  return event.start <= dayEnd && (event.end > dayStart || isSameDay(event.start, day));
 }
 
-const fmtTime = (d: Date) => d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+/** Time of day in minutes, used to order the events of one day. */
+const minutesOfDay = (d: Date) => d.getHours() * 60 + d.getMinutes();
+const byTimeOfDay = (a: CalendarEvent, b: CalendarEvent) => minutesOfDay(a.start) - minutesOfDay(b.start);
+
+const fmtTime = (d: Date) => d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false });
 
 /**
  * Time label shown for an event on a given day.
@@ -93,7 +99,7 @@ export function MonthCalendar({
     });
   }, [cursor]);
 
-  const eventsForSelected = events.filter((e) => eventCoversDay(e, selectedDay));
+  const eventsForSelected = events.filter((e) => eventCoversDay(e, selectedDay)).sort(byTimeOfDay);
 
   return (
     <div className="space-y-4">
@@ -143,7 +149,7 @@ export function MonthCalendar({
           const inMonth = day.getMonth() === cursor.getMonth();
           const isToday = isSameDay(day, today);
           const isSelected = isSameDay(day, selectedDay);
-          const dayEvents = events.filter((e) => eventCoversDay(e, day));
+          const dayEvents = events.filter((e) => eventCoversDay(e, day)).sort(byTimeOfDay);
 
           return (
             <button
@@ -170,7 +176,12 @@ export function MonthCalendar({
                     className="flex items-center gap-1 truncate rounded bg-accent px-1 py-0.5 text-[10px] text-accent-foreground"
                   >
                     <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', statusDot[e.status || ''] || 'bg-primary')} />
-                    <span className="truncate">{e.title}</span>
+                    <span className="truncate">
+                      {(isSameDay(e.start, e.end) || e.spanMode === 'DAILY_WINDOW') && (
+                        <span className="me-1 opacity-70">{fmtTime(e.start)}</span>
+                      )}
+                      {e.title}
+                    </span>
                   </span>
                 ))}
                 {dayEvents.length > 2 && (

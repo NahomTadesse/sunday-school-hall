@@ -174,8 +174,8 @@ export default function ScheduleBulkPage() {
                   {rows.map((r) => (
                     <TableRow key={r.rowNumber} className={r.item ? '' : 'bg-destructive/5'}>
                       <TableCell>{r.rowNumber}</TableCell>
-                      <TableCell>{r.item ? fmt(r.item.startTime) : '—'}</TableCell>
-                      <TableCell>{r.item ? fmt(r.item.endTime) : '—'}</TableCell>
+                      <TableCell>{r.item ? fmt(r.item.startDate, r.item.startTime) : '—'}</TableCell>
+                      <TableCell>{r.item ? fmt(r.item.endDate, r.item.endTime) : '—'}</TableCell>
                       <TableCell>{r.item?.purpose ?? '—'}</TableCell>
                       <TableCell>{r.hallName || '—'}</TableCell>
                       <TableCell>{r.item?.recurrenceType ?? '—'}</TableCell>
