@@ -1,9 +1,11 @@
 'use client';
 
+import * as React from 'react';
 import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
 export interface CalendarEvent {
@@ -59,6 +61,28 @@ function timeLabelForDay(event: CalendarEvent, day: Date, allDayLabel: string) {
   return allDayLabel;
 }
 
+const pad2 = (n: number) => String(n).padStart(2, '0');
+const fmtDate = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+
+/** Hover card for an event name: full start and end (date + time). */
+function EventTooltip({ event, children }: { event: CalendarEvent; children: React.ReactNode }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent side="top" className="max-w-xs space-y-0.5">
+        <p className="font-semibold">{event.title}</p>
+        {event.subtitle && <p className="opacity-80">{event.subtitle}</p>}
+        <p>
+          Start: {fmtDate(event.start)} {fmtTime(event.start)}
+        </p>
+        <p>
+          End: {fmtDate(event.end)} {fmtTime(event.end)}
+        </p>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 export function MonthCalendar({
   events,
   weekdayLabels,
@@ -102,6 +126,7 @@ export function MonthCalendar({
   const eventsForSelected = events.filter((e) => eventCoversDay(e, selectedDay)).sort(byTimeOfDay);
 
   return (
+    <TooltipProvider delayDuration={150}>
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold">{monthLabel}</h3>
@@ -171,18 +196,17 @@ export function MonthCalendar({
               </span>
               <div className="flex w-full flex-1 flex-col gap-0.5 overflow-hidden">
                 {dayEvents.slice(0, 2).map((e) => (
-                  <span
-                    key={e.id}
-                    className="flex items-center gap-1 truncate rounded bg-accent px-1 py-0.5 text-[10px] text-accent-foreground"
-                  >
-                    <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', statusDot[e.status || ''] || 'bg-primary')} />
-                    <span className="truncate">
-                      {(isSameDay(e.start, e.end) || e.spanMode === 'DAILY_WINDOW') && (
-                        <span className="me-1 opacity-70">{fmtTime(e.start)}</span>
-                      )}
-                      {e.title}
+                  <EventTooltip key={e.id} event={e}>
+                    <span className="flex items-center gap-1 truncate rounded bg-accent px-1 py-0.5 text-[10px] text-accent-foreground">
+                      <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', statusDot[e.status || ''] || 'bg-primary')} />
+                      <span className="truncate">
+                        {(isSameDay(e.start, e.end) || e.spanMode === 'DAILY_WINDOW') && (
+                          <span className="me-1 opacity-70">{fmtTime(e.start)}</span>
+                        )}
+                        {e.title}
+                      </span>
                     </span>
-                  </span>
+                  </EventTooltip>
                 ))}
                 {dayEvents.length > 2 && (
                   <span className="text-[10px] text-muted-foreground">+{dayEvents.length - 2} more</span>
@@ -203,7 +227,9 @@ export function MonthCalendar({
             {eventsForSelected.map((e) => (
               <li key={e.id} className="flex items-start justify-between gap-3 rounded-md border p-3 text-sm">
                 <div className="min-w-0">
-                  <p className="truncate font-medium">{e.title}</p>
+                  <EventTooltip event={e}>
+                    <p className="w-fit max-w-full cursor-default truncate font-medium">{e.title}</p>
+                  </EventTooltip>
                   {e.subtitle && <p className="truncate text-xs text-muted-foreground">{e.subtitle}</p>}
                   <p className="mt-0.5 text-xs text-muted-foreground">
                     {timeLabelForDay(e, selectedDay, allDayLabel ?? 'All day')}
@@ -227,5 +253,6 @@ export function MonthCalendar({
         )}
       </div>
     </div>
+    </TooltipProvider>
   );
 }
