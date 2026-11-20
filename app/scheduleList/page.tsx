@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import Cookies from 'js-cookie';
 import { toast } from 'sonner';
-import { ArrowUpDown, CalendarClock, CalendarDays, Download, MoreVertical, AlertCircle, Eye, LayoutList, Search } from 'lucide-react';
+import { ArrowUpDown, CalendarClock, CalendarDays, Download, MoreVertical, AlertCircle, Eye, Pencil, LayoutList, Search } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,6 +30,7 @@ import {
   fmtDateTime,
   fmtDateTimeNice,
   formatApiDate,
+  formatApiTime,
   getEnd,
   getStart,
   toApiTime,
@@ -86,6 +87,15 @@ export default function ScheduleListPage() {
   const [reversed, setReversed] = useState(false);
 
   const [detailsRow, setDetailsRow] = useState<ScheduleItem | null>(null);
+  const [editRow, setEditRow] = useState<ScheduleItem | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editStartDate, setEditStartDate] = useState('');
+  const [editStartTime, setEditStartTime] = useState('');
+  const [editEndDate, setEditEndDate] = useState('');
+  const [editEndTime, setEditEndTime] = useState('');
+  const [editPurpose, setEditPurpose] = useState('');
+  const [editRequirements, setEditRequirements] = useState<string[]>([]);
+  const [editHallId, setEditHallId] = useState('');
   const [postponeOpen, setPostponeOpen] = useState(false);
   const [unexpectedOpen, setUnexpectedOpen] = useState(false);
   const [selectedScheduleId, setSelectedScheduleId] = useState<string | null>(null);
@@ -190,6 +200,69 @@ export default function ScheduleListPage() {
   const setSorting = (field: string) => {
     setReversed(field === sortBy ? !reversed : false);
     setSortBy(field);
+  };
+
+  const openEdit = (row: ScheduleItem) => {
+    setEditRow(row);
+    setEditStartDate(formatApiDate(row.startDate));
+    setEditStartTime(formatApiTime(row.startTime));
+    setEditEndDate(formatApiDate(row.endDate));
+    setEditEndTime(formatApiTime(row.endTime));
+    setEditPurpose(row.purpose ?? '');
+    setEditRequirements(row.requirements ?? []);
+    setEditHallId(row.hall?.id ?? '');
+  };
+
+  const handleUpdate = async () => {
+    if (!editRow) return;
+    if (!editStartDate || !editStartTime || !editPurpose || !editHallId) {
+      toast.error('Please fill in all required fields.');
+      return;
+    }
+    if (!!editEndDate !== !!editEndTime) {
+      toast.error('Fill in both the end date and the end time, or leave both empty.');
+      return;
+    }
+    const hasEnd = !!editEndDate && !!editEndTime;
+    if (hasEnd) {
+      const rangeError = validateRange(editStartDate, editStartTime, editEndDate, editEndTime);
+      if (rangeError) {
+        toast.error(rangeError);
+        return;
+      }
+    }
+    setEditSaving(true);
+    try {
+      const response = await fetch(`${API_BASE}/scheduler/${editRow.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+        body: JSON.stringify({
+          startDate: editStartDate,
+          startTime: toApiTime(editStartTime),
+          ...(hasEnd ? { endDate: editEndDate, endTime: toApiTime(editEndTime) } : {}),
+          purpose: editPurpose,
+          requirements: editRequirements,
+          hallId: editHallId,
+        }),
+      });
+      if (response.status === 401 || response.status === 403) {
+        handleUnauthorized();
+        return;
+      }
+      const data = await response.json().catch(() => ({}));
+      if (response.ok) {
+        toast.success(data?.message || 'Schedule updated successfully!');
+        setEditRow(null);
+        fetchAllSchedules();
+      } else {
+        toast.error(data?.message || 'Failed to update schedule.');
+      }
+    } catch (error) {
+      console.error('Error updating schedule:', error);
+      toast.error('Network error. Please try again.');
+    } finally {
+      setEditSaving(false);
+    }
   };
 
   const handlePostpone = async () => {
@@ -407,6 +480,10 @@ export default function ScheduleListPage() {
                                   <Eye className="me-2 h-4 w-4" />
                                   View Details
                                 </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => openEdit(row)}>
+                                  <Pencil className="me-2 h-4 w-4" />
+                                  Edit
+                                </DropdownMenuItem>
                                 <DropdownMenuItem
                                   onClick={() => {
                                     setSelectedScheduleId(row.id);
@@ -491,7 +568,8 @@ export default function ScheduleListPage() {
                     )}
                   </DetailRow>
                   <DetailRow label="Created at">{fmtStamp(detailsRow.createdAt)}</DetailRow>
-                 
+                  <DetailRow label="Schedule ID">{detailsRow.id}</DetailRow>
+                  <DetailRow label="Key">{detailsRow.key}</DetailRow>
                 </dl>
               </section>
 
@@ -513,7 +591,7 @@ export default function ScheduleListPage() {
                   <DetailRow label="Occurrences">{detailsRow.occurrences}</DetailRow>
                   <DetailRow label="Upcoming">{detailsRow.upcoming}</DetailRow>
                   <DetailRow label="Weeks">{detailsRow.weeks}</DetailRow>
-                 
+                  <DetailRow label="Recurrence group ID">{detailsRow.recurrenceGroupId || '—'}</DetailRow>
                 </dl>
               </section>
 
@@ -545,7 +623,7 @@ export default function ScheduleListPage() {
                       '—'
                     )}
                   </DetailRow>
-            
+                  <DetailRow label="Hall ID">{detailsRow.hall?.id}</DetailRow>
                 </dl>
               </section>
             </div>
@@ -553,6 +631,75 @@ export default function ScheduleListPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setDetailsRow(null)}>
               Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!editRow} onOpenChange={(open) => !open && setEditRow(null)}>
+        <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Schedule</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label>Start Date</Label>
+                <Input type="date" value={editStartDate} onChange={(e) => setEditStartDate(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Start Time</Label>
+                <Input type="time" value={editStartTime} onChange={(e) => setEditStartTime(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>
+                  End Date <span className="text-xs font-normal text-muted-foreground">(optional)</span>
+                </Label>
+                <Input
+                  type="date"
+                  min={editStartDate || undefined}
+                  value={editEndDate}
+                  onChange={(e) => setEditEndDate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>
+                  End Time <span className="text-xs font-normal text-muted-foreground">(optional)</span>
+                </Label>
+                <Input type="time" value={editEndTime} onChange={(e) => setEditEndTime(e.target.value)} />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Purpose</Label>
+              <Input value={editPurpose} onChange={(e) => setEditPurpose(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Requirements</Label>
+              <FacilitiesPicker
+                options={Array.from(new Set(['Tv', 'Projector', ...editRequirements])).map((v) => ({
+                  value: v,
+                  label: v === 'Tv' ? 'TV' : v,
+                }))}
+                value={editRequirements}
+                onChange={setEditRequirements}
+              />
+            </div>
+            <div className="max-w-xs space-y-1.5">
+              <Label>Hall</Label>
+              <Select
+                options={halls.map((h) => ({ value: h.id, label: h.name }))}
+                placeholder="Choose a hall"
+                value={editHallId}
+                onValueChange={setEditHallId}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditRow(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdate} loading={editSaving}>
+              Save Changes
             </Button>
           </DialogFooter>
         </DialogContent>

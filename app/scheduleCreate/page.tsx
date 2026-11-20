@@ -61,6 +61,8 @@ export default function ScheduleCreatePage() {
   const [loading, setLoading] = useState(false);
   const [recurrenceType, setRecurrenceType] = useState('NONE');
   const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
+  // once the user edits "Repeat until" themselves we stop mirroring the end date into it
+  const [recurrenceEndTouched, setRecurrenceEndTouched] = useState(false);
   const [daysOfWeek, setDaysOfWeek] = useState<string[]>([]);
   const [spanMode, setSpanMode] = useState('CONTINUOUS');
   const isRecurring = recurrenceType !== 'NONE';
@@ -91,21 +93,30 @@ export default function ScheduleCreatePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!startDate || !startTime || !endDate || !endTime || !purpose || !hallId) {
-      toast.error('Please fill in all fields.');
+    if (!startDate || !startTime || !purpose || !hallId) {
+      toast.error('Please fill in all required fields.');
       return;
     }
 
-    const rangeError = validateRange(
-      startDate,
-      startTime,
-      endDate,
-      endTime,
-      isRecurring && spanMode === 'DAILY_WINDOW'
-    );
-    if (rangeError) {
-      toast.error(rangeError);
+    // End date/time are optional, but if one is given the other is needed too.
+    if (!!endDate !== !!endTime) {
+      toast.error('Fill in both the end date and the end time, or leave both empty.');
       return;
+    }
+    const hasEnd = !!endDate && !!endTime;
+
+    if (hasEnd) {
+      const rangeError = validateRange(
+        startDate,
+        startTime,
+        endDate,
+        endTime,
+        isRecurring && spanMode === 'DAILY_WINDOW'
+      );
+      if (rangeError) {
+        toast.error(rangeError);
+        return;
+      }
     }
 
     if (isRecurring) {
@@ -113,7 +124,7 @@ export default function ScheduleCreatePage() {
         toast.error('Please choose when the recurrence ends.');
         return;
       }
-      if (recurrenceEndDate < endDate) {
+      if (recurrenceEndDate < (endDate || startDate)) {
         toast.error('The repeat-until date must not be before the end date.');
         return;
       }
@@ -129,9 +140,8 @@ export default function ScheduleCreatePage() {
     // Date and time are sent separately: startDate/endDate = "YYYY-MM-DD", startTime/endTime = "HH:mm:ss".
     const base: ScheduleRequestPayload = {
       startDate,
-      endDate,
+      ...(hasEnd ? { endDate, endTime: toApiTime(endTime) } : {}),
       startTime: toApiTime(startTime),
-      endTime: toApiTime(endTime),
       purpose,
       requirements,
       hallId,
@@ -174,6 +184,7 @@ export default function ScheduleCreatePage() {
         setHallId('');
         setRecurrenceType('NONE');
         setRecurrenceEndDate('');
+        setRecurrenceEndTouched(false);
         setDaysOfWeek([]);
         setSpanMode('CONTINUOUS');
       } else {
@@ -203,11 +214,7 @@ export default function ScheduleCreatePage() {
                 id="startDate"
                 type="date"
                 value={startDate}
-                onChange={(e) => {
-                  setStartDate(e.target.value);
-                  // keep a single-day schedule the easy default
-                  if (!endDate || endDate < e.target.value) setEndDate(e.target.value);
-                }}
+                onChange={(e) => setStartDate(e.target.value)}
                 required
               />
             </div>
@@ -222,24 +229,26 @@ export default function ScheduleCreatePage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="endDate">End Date</Label>
+              <Label htmlFor="endDate">End Date <span className="text-xs font-normal text-muted-foreground">(optional)</span></Label>
               <Input
                 id="endDate"
                 type="date"
                 min={startDate || undefined}
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                required
+                onChange={(e) => {
+                  setEndDate(e.target.value);
+                  // "Repeat until" follows the end date until the user changes it themselves
+                  if (!recurrenceEndTouched) setRecurrenceEndDate(e.target.value);
+                }}
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="endTime">End Time</Label>
+              <Label htmlFor="endTime">End Time <span className="text-xs font-normal text-muted-foreground">(optional)</span></Label>
               <Input
                 id="endTime"
                 type="time"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
-                required
               />
             </div>
           </div>
@@ -277,9 +286,12 @@ export default function ScheduleCreatePage() {
                   <Input
                     id="recurrenceEndDate"
                     type="date"
-                    min={endDate || undefined}
+                    min={endDate || startDate || undefined}
                     value={recurrenceEndDate}
-                    onChange={(e) => setRecurrenceEndDate(e.target.value)}
+                    onChange={(e) => {
+                      setRecurrenceEndDate(e.target.value);
+                      setRecurrenceEndTouched(true);
+                    }}
                     required
                   />
                 </div>

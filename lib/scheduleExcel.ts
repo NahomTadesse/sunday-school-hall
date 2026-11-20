@@ -282,4 +282,4 @@ export async function parseScheduleFile(file: File, halls: HallRef[]): Promise<P
 }
 
 /** "2026-10-05 09:00" for the preview table. */
-export const fmt = (date: string, time: string) => `${date} ${time.slice(0, 5)}`;
+export const fmt = (date?: string, time?: string) => (date && time ? `${date} ${time.slice(0, 5)}` : '—');
