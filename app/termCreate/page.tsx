@@ -72,7 +72,7 @@ export default function CreateTermPage() {
       }
 
       const data = await response.json().catch(() => ({}));
-      if (response.ok) {
+      if (response.ok && data?.success !== false) {
         toast.success(data?.message || 'Term created.');
         setTermText('');
         setSelectedHallId('');

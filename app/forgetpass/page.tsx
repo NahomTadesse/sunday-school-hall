@@ -29,8 +29,11 @@ export default function ForgotPasswordPage() {
         `${API_BASE}/auth/forgot-password?principal=${encodeURIComponent(email)}`,
         { method: 'POST' }
       );
-      if (!response.ok) throw new Error('Failed to send reset link');
-      toast.success('Reset link sent! Check your email.');
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data?.success === false) {
+        throw new Error(data?.message || 'Failed to send reset link');
+      }
+      toast.success(data?.message || 'Reset link sent! Check your email.');
       setEmail('');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Something went wrong.');

@@ -1,3 +1,14 @@
+/**
+ * Shared helpers for the schedule API.
+ *
+ * The backend now splits every schedule into
+ *   startDate / endDate  ("YYYY-MM-DD")
+ *   startTime / endTime  (LocalTime)
+ * instead of a single start/end date-time.
+ *
+ * Java's LocalTime can arrive as "09:00:00", as [9, 0] / [9, 0, 0] (Jackson timestamps) or as the
+ * { hour, minute, second, nano } object that Swagger documents - parseApiTime() accepts all three.
+ */
 
 export interface ApiLocalTime {
   hour: number;
@@ -53,9 +64,9 @@ export interface ScheduleItem {
 /** Body of POST /scheduler/unexpected, /scheduler/recurring and every item of /scheduler/bulk. */
 export interface ScheduleRequestPayload {
   startDate: string;
-  endDate: string;
+  endDate?: string;
   startTime: string;
-  endTime: string;
+  endTime?: string;
   purpose: string;
   requirements: string[];
   hallId: string;
@@ -178,6 +189,12 @@ export function dateFromInputs(date: string, time: string): Date | null {
   return new Date(d.y, d.mo - 1, d.d, t.h, t.m, 0, 0);
 }
 
+/**
+ * Shared validation for the create form, the "unexpected" dialog and the bulk upload.
+ * Returns an error message, or null when the range is fine.
+ *  - DAILY_WINDOW: the dates give the range, the times give the daily window (end time after start time).
+ *  - everything else: end date + end time must be after start date + start time.
+ */
 export function validateRange(
   startDate: string,
   startTime: string,

@@ -80,7 +80,7 @@ export default function ChangePasswordPage() {
       });
 
       const data = await response.json().catch(() => ({}));
-      if (response.ok) {
+      if (response.ok && data?.success !== false) {
         toast.success(data?.message || t('common.success'));
         setOldPassword('');
         setNewPassword('');

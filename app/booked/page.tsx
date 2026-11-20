@@ -112,7 +112,7 @@ export default function BookedPage() {
         return;
       }
       const data = await response.json();
-      if (response.ok) {
+      if (response.ok && data?.success !== false) {
         toast.success(data.message || 'Booking accepted successfully!');
         fetchBookings();
       } else {
@@ -134,7 +134,7 @@ export default function BookedPage() {
         return;
       }
       const data = await response.json();
-      if (response.ok) {
+      if (response.ok && data?.success !== false) {
         toast.success(data.message || 'Booking rejected.');
         fetchBookings();
       } else {
@@ -176,7 +176,7 @@ export default function BookedPage() {
         return;
       }
       const data = await response.json();
-      if (response.ok) {
+      if (response.ok && data?.success !== false) {
         toast.success(data.message || 'Payment confirmed successfully!');
         fetchBookings();
       } else {

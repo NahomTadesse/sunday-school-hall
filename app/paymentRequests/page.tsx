@@ -86,11 +86,12 @@ export default function PaymentRequestsPage() {
         handleUnauthorized();
         return;
       }
-      if (response.ok) {
-        toast.success('Payment confirmed.');
+      const data = await response.json().catch(() => ({}));
+      if (response.ok && data?.success !== false) {
+        toast.success(data?.message || 'Payment confirmed.');
         fetchPayments();
       } else {
-        toast.error('Failed to confirm payment.');
+        toast.error(data?.message || 'Failed to confirm payment.');
       }
     } catch {
       toast.error('Network error. Please try again.');

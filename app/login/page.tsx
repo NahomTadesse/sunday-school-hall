@@ -46,9 +46,9 @@ export default function LoginPage() {
         body: JSON.stringify({ principal: email, password }),
       });
 
-      if (response.ok) {
-        const data = await response.json();
+      const data = await response.json().catch(() => ({}));
 
+      if (response.ok && data?.success !== false) {
         if (rememberMe) {
           localStorage.setItem('email', email);
         } else {
@@ -60,8 +60,7 @@ export default function LoginPage() {
         // AppShell's own effect redirects once isAuthenticated flips true —
         // navigating here too caused a double-navigation race (insertBefore crash).
       } else {
-        const errorData = await response.json().catch(() => ({ message: undefined }));
-        setError(errorData?.message || t('auth.loginError'));
+        setError(data?.message || t('auth.loginError'));
       }
     } catch {
       setError(t('auth.networkError'));
