@@ -1,14 +1,3 @@
-/**
- * Shared helpers for the schedule API.
- *
- * The backend now splits every schedule into
- *   startDate / endDate  ("YYYY-MM-DD")
- *   startTime / endTime  (LocalTime)
- * instead of a single start/end date-time.
- *
- * Java's LocalTime can arrive as "09:00:00", as [9, 0] / [9, 0, 0] (Jackson timestamps) or as the
- * { hour, minute, second, nano } object that Swagger documents - parseApiTime() accepts all three.
- */
 
 export interface ApiLocalTime {
   hour: number;
