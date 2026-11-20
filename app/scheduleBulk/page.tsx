@@ -89,7 +89,7 @@ export default function ScheduleBulkPage() {
         return;
       }
       const data = await res.json().catch(() => ({}));
-      if (res.ok) {
+      if (res.ok && data?.success !== false) {
         toast.success(data?.message || `${payload.length} schedule(s) uploaded.`);
         setRows([]);
         setFileName('');

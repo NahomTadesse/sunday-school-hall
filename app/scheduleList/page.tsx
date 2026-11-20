@@ -250,7 +250,7 @@ export default function ScheduleListPage() {
         return;
       }
       const data = await response.json().catch(() => ({}));
-      if (response.ok) {
+      if (response.ok && data?.success !== false) {
         toast.success(data?.message || 'Schedule updated successfully!');
         setEditRow(null);
         fetchAllSchedules();
@@ -281,12 +281,13 @@ export default function ScheduleListPage() {
         handleUnauthorized();
         return;
       }
-      if (response.ok) {
-        toast.success('Schedule postponed successfully!');
+      const data = await response.json().catch(() => ({}));
+      if (response.ok && data?.success !== false) {
+        toast.success(data?.message || 'Schedule postponed successfully!');
         setPostponeOpen(false);
         fetchAllSchedules();
       } else {
-        toast.error('Failed to postpone schedule.');
+        toast.error(data?.message || 'Failed to postpone schedule.');
       }
     } catch (error) {
       console.error('Error postponing schedule:', error);
@@ -327,7 +328,7 @@ export default function ScheduleListPage() {
         return;
       }
       const data = await response.json().catch(() => ({}));
-      if (response.ok) {
+      if (response.ok && data?.success !== false) {
         toast.success(data?.message || 'Unexpected schedule created successfully!');
         setUnexpectedOpen(false);
         setUnexpectedStartDate('');
