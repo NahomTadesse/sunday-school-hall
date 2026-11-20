@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import Cookies from 'js-cookie';
 import { toast } from 'sonner';
-import { ArrowUpDown, CalendarClock, CalendarDays, Download, MoreVertical, AlertCircle, Eye, Pencil, LayoutList, Search } from 'lucide-react';
+import { ArrowUpDown, CalendarClock, CalendarDays, Download, MoreVertical, AlertCircle, Eye, Pencil, RefreshCw, LayoutList, Search } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -68,6 +68,10 @@ const UNEXPECTED_REQUIREMENT_OPTIONS = ['Projector', 'Microphone', 'Whiteboard',
   label: v,
 }));
 
+// TODO: adjust to the statuses / endpoint your backend really uses.
+const SCHEDULE_STATUSES = ['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED'];
+const statusUrl = (id: string) => `${API_BASE}/scheduler/${id}/status`;
+
 function getAuthHeader() {
   const userDataString = Cookies.get('userData');
   const userData = userDataString ? JSON.parse(userDataString) : null;
@@ -96,6 +100,9 @@ export default function ScheduleListPage() {
   const [editPurpose, setEditPurpose] = useState('');
   const [editRequirements, setEditRequirements] = useState<string[]>([]);
   const [editHallId, setEditHallId] = useState('');
+  const [statusRow, setStatusRow] = useState<ScheduleItem | null>(null);
+  const [newStatus, setNewStatus] = useState('');
+  const [statusSaving, setStatusSaving] = useState(false);
   const [postponeOpen, setPostponeOpen] = useState(false);
   const [unexpectedOpen, setUnexpectedOpen] = useState(false);
   const [selectedScheduleId, setSelectedScheduleId] = useState<string | null>(null);
@@ -262,6 +269,38 @@ export default function ScheduleListPage() {
       toast.error('Network error. Please try again.');
     } finally {
       setEditSaving(false);
+    }
+  };
+
+  const handleChangeStatus = async () => {
+    if (!statusRow || !newStatus) {
+      toast.error('Please choose a new status.');
+      return;
+    }
+    setStatusSaving(true);
+    try {
+      const response = await fetch(statusUrl(statusRow.id), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (response.status === 401 || response.status === 403) {
+        handleUnauthorized();
+        return;
+      }
+      const data = await response.json().catch(() => ({}));
+      if (response.ok && data?.success !== false) {
+        toast.success(data?.message || 'Status updated successfully!');
+        setStatusRow(null);
+        fetchAllSchedules();
+      } else {
+        toast.error(data?.message || 'Failed to update status.');
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error('Network error. Please try again.');
+    } finally {
+      setStatusSaving(false);
     }
   };
 
@@ -487,6 +526,15 @@ export default function ScheduleListPage() {
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   onClick={() => {
+                                    setStatusRow(row);
+                                    setNewStatus('');
+                                  }}
+                                >
+                                  <RefreshCw className="me-2 h-4 w-4" />
+                                  Change Status
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => {
                                     setSelectedScheduleId(row.id);
                                     setNewStartTime(toDateTimeLocalValue(getStart(row)));
                                     setNewEndTime(toDateTimeLocalValue(getEnd(row)));
@@ -701,6 +749,39 @@ export default function ScheduleListPage() {
             </Button>
             <Button onClick={handleUpdate} loading={editSaving}>
               Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!statusRow} onOpenChange={(open) => !open && setStatusRow(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change Status</DialogTitle>
+          </DialogHeader>
+          {statusRow && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 text-sm">
+                <span className="text-muted-foreground">Current status</span>
+                <Badge variant="secondary">{statusRow.status}</Badge>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Change to</Label>
+                <Select
+                  options={SCHEDULE_STATUSES.filter((st) => st !== statusRow.status).map((st) => ({ value: st, label: st }))}
+                  placeholder="Select new status"
+                  value={newStatus}
+                  onValueChange={setNewStatus}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setStatusRow(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleChangeStatus} loading={statusSaving} disabled={!newStatus}>
+              Update Status
             </Button>
           </DialogFooter>
         </DialogContent>
