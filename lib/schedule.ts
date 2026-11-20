@@ -1,14 +1,3 @@
-/**
- * Shared helpers for the schedule API.
- *
- * The backend now splits every schedule into
- *   startDate / endDate  ("YYYY-MM-DD")
- *   startTime / endTime  (LocalTime)
- * instead of a single start/end date-time.
- *
- * Java's LocalTime can arrive as "09:00:00", as [9, 0] / [9, 0, 0] (Jackson timestamps) or as the
- * { hour, minute, second, nano } object that Swagger documents - parseApiTime() accepts all three.
- */
 
 export interface ApiLocalTime {
   hour: number;
@@ -19,9 +8,26 @@ export interface ApiLocalTime {
 
 export type ApiTime = string | number[] | ApiLocalTime | null | undefined;
 
+export interface ScheduleHallTerm {
+  id?: string;
+  termsText: string;
+}
+
+export interface ScheduleHall {
+  id?: string;
+  name: string;
+  capacity?: number;
+  availability?: boolean;
+  facilities?: string[];
+  terms?: ScheduleHallTerm[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface ScheduleItem {
   id: string;
-  hall?: { id?: string; name: string };
+  key?: string;
+  hall?: ScheduleHall;
   startDate?: string | number[];
   endDate?: string | number[];
   startTime?: ApiTime;
@@ -33,6 +39,13 @@ export interface ScheduleItem {
   recurrenceType?: string;
   recurrenceEndDate?: string;
   recurrenceGroupId?: string;
+  occurrences?: number;
+  upcoming?: number;
+  weeks?: number;
+  nextOccurrence?: string | number[] | null;
+  ongoing?: boolean;
+  singleOccurrence?: boolean;
+  createdAt?: string;
   /** Only sent by the create/bulk request; kept optional in case the API echoes it back. */
   spanMode?: string;
 }
@@ -135,6 +148,14 @@ export function fmtDateTime(d: Date | null): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+/** Human friendly: "Mon, Feb 8, 2027 · 6:47 PM" */
+export function fmtDateTimeNice(d: Date | null, locale = 'en-US'): string {
+  if (!d) return '';
+  const date = new Intl.DateTimeFormat(locale, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }).format(d);
+  const time = new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit', hour12: true }).format(d);
+  return `${date} · ${time}`;
+}
+
 /** "09:00" / "09:00:30" (from <input type="time">) -> "09:00:00" for the LocalTime fields. */
 export function toApiTime(hhmm: string): string {
   const m = hhmm.match(/^(\d{1,2}):(\d{2})/);
@@ -157,12 +178,6 @@ export function dateFromInputs(date: string, time: string): Date | null {
   return new Date(d.y, d.mo - 1, d.d, t.h, t.m, 0, 0);
 }
 
-/**
- * Shared validation for the create form, the "unexpected" dialog and the bulk upload.
- * Returns an error message, or null when the range is fine.
- *  - DAILY_WINDOW: the dates give the range, the times give the daily window (end time after start time).
- *  - everything else: end date + end time must be after start date + start time.
- */
 export function validateRange(
   startDate: string,
   startTime: string,

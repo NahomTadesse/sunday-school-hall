@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import Cookies from 'js-cookie';
 import { toast } from 'sonner';
-import { ArrowUpDown, CalendarClock, CalendarDays, Download, MoreVertical, AlertCircle, LayoutList, Search } from 'lucide-react';
+import { ArrowUpDown, CalendarClock, CalendarDays, Download, MoreVertical, AlertCircle, Eye, LayoutList, Search } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,6 +28,8 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { handleUnauthorized } from '@/lib/api';
 import {
   fmtDateTime,
+  fmtDateTimeNice,
+  formatApiDate,
   getEnd,
   getStart,
   toApiTime,
@@ -35,6 +37,23 @@ import {
   validateRange,
   type ScheduleItem,
 } from '@/lib/schedule';
+
+function DetailRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="grid grid-cols-3 gap-3 py-2 text-sm">
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="col-span-2 break-words font-medium">{children ?? '—'}</dd>
+    </div>
+  );
+}
+
+const fmtStamp = (v?: string) => {
+  if (!v) return '—';
+  const d = new Date(v);
+  return isNaN(d.getTime()) ? v : fmtDateTime(d);
+};
+
+const yesNo = (v?: boolean) => (v === undefined || v === null ? '—' : v ? 'Yes' : 'No');
 
 const API_BASE = 'https://hall-api.hohitebirhan.com/api/v1';
 
@@ -56,6 +75,8 @@ function getAuthHeader() {
 
 export default function ScheduleListPage() {
   const { t, locale } = useLanguage();
+  const intlLocale = locale === 'am' ? 'am-ET' : 'en-US';
+  const niceDate = (d: Date | null) => fmtDateTimeNice(d, intlLocale);
   const [halls, setHalls] = useState<Hall[]>([]);
   const [selectedHallId, setSelectedHallId] = useState('');
   const [scheduleData, setScheduleData] = useState<ScheduleItem[]>([]);
@@ -64,6 +85,7 @@ export default function ScheduleListPage() {
   const [sortBy, setSortBy] = useState<string | null>(null);
   const [reversed, setReversed] = useState(false);
 
+  const [detailsRow, setDetailsRow] = useState<ScheduleItem | null>(null);
   const [postponeOpen, setPostponeOpen] = useState(false);
   const [unexpectedOpen, setUnexpectedOpen] = useState(false);
   const [selectedScheduleId, setSelectedScheduleId] = useState<string | null>(null);
@@ -254,7 +276,7 @@ export default function ScheduleListPage() {
     const doc = new jsPDF();
     autoTable(doc, {
       head: [['Start', 'End', 'Purpose', 'Requirements', 'Hall Name', 'Status', 'Repeat', 'Span Mode']],
-      body: rows.map((row) => [fmtDateTime(getStart(row)), fmtDateTime(getEnd(row)), row.purpose, row.requirements?.join(', '), row.hall?.name, row.status, row.recurrenceType && row.recurrenceType !== 'NONE' ? row.recurrenceType : '', row.spanMode ?? '']),
+      body: rows.map((row) => [niceDate(getStart(row)), niceDate(getEnd(row)), row.purpose, row.requirements?.join(', '), row.hall?.name, row.status, row.recurrenceType && row.recurrenceType !== 'NONE' ? row.recurrenceType : '', row.spanMode ?? '']),
     });
     doc.save('schedules.pdf');
   };
@@ -355,8 +377,8 @@ export default function ScheduleListPage() {
                     {rows.length > 0 ? (
                       rows.map((row) => (
                         <TableRow key={row.id}>
-                          <TableCell className="whitespace-nowrap text-sm">{fmtDateTime(getStart(row)) || '—'}</TableCell>
-                          <TableCell className="whitespace-nowrap text-sm">{fmtDateTime(getEnd(row)) || '—'}</TableCell>
+                          <TableCell className="whitespace-nowrap text-sm">{niceDate(getStart(row)) || '—'}</TableCell>
+                          <TableCell className="whitespace-nowrap text-sm">{niceDate(getEnd(row)) || '—'}</TableCell>
                           <TableCell>{row.purpose}</TableCell>
                           <TableCell className="text-muted-foreground">{row.requirements?.join(', ')}</TableCell>
                           <TableCell>{row.hall?.name}</TableCell>
@@ -381,6 +403,10 @@ export default function ScheduleListPage() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => setDetailsRow(row)}>
+                                  <Eye className="me-2 h-4 w-4" />
+                                  View Details
+                                </DropdownMenuItem>
                                 <DropdownMenuItem
                                   onClick={() => {
                                     setSelectedScheduleId(row.id);
@@ -437,6 +463,100 @@ export default function ScheduleListPage() {
           </Tabs>
         </CardContent>
       </Card>
+
+      <Dialog open={!!detailsRow} onOpenChange={(open) => !open && setDetailsRow(null)}>
+        <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Schedule Details</DialogTitle>
+          </DialogHeader>
+          {detailsRow && (
+            <div className="space-y-5">
+              <section>
+                <h3 className="mb-1 text-xs font-semibold uppercase text-muted-foreground">Schedule</h3>
+                <dl className="divide-y">
+                  <DetailRow label="Purpose">{detailsRow.purpose}</DetailRow>
+                  <DetailRow label="Status">
+                    <Badge variant="secondary">{detailsRow.status}</Badge>
+                  </DetailRow>
+                  <DetailRow label="Confirmed">{yesNo(detailsRow.confirmed)}</DetailRow>
+                  <DetailRow label="Requirements">
+                    {detailsRow.requirements?.length ? (
+                      <span className="flex flex-wrap gap-1">
+                        {detailsRow.requirements.map((r) => (
+                          <Badge key={r} variant="outline">{r}</Badge>
+                        ))}
+                      </span>
+                    ) : (
+                      '—'
+                    )}
+                  </DetailRow>
+                  <DetailRow label="Created at">{fmtStamp(detailsRow.createdAt)}</DetailRow>
+                 
+                </dl>
+              </section>
+
+              <section>
+                <h3 className="mb-1 text-xs font-semibold uppercase text-muted-foreground">Date &amp; Time</h3>
+                <dl className="divide-y">
+                  <DetailRow label="Start">{niceDate(getStart(detailsRow)) || '—'}</DetailRow>
+                  <DetailRow label="End">{niceDate(getEnd(detailsRow)) || '—'}</DetailRow>
+                  <DetailRow label="Next occurrence">{formatApiDate(detailsRow.nextOccurrence) || '—'}</DetailRow>
+                  <DetailRow label="Ongoing">{yesNo(detailsRow.ongoing)}</DetailRow>
+                </dl>
+              </section>
+
+              <section>
+                <h3 className="mb-1 text-xs font-semibold uppercase text-muted-foreground">Recurrence</h3>
+                <dl className="divide-y">
+                  <DetailRow label="Repeat">{detailsRow.recurrenceType || 'NONE'}</DetailRow>
+                  <DetailRow label="Single occurrence">{yesNo(detailsRow.singleOccurrence)}</DetailRow>
+                  <DetailRow label="Occurrences">{detailsRow.occurrences}</DetailRow>
+                  <DetailRow label="Upcoming">{detailsRow.upcoming}</DetailRow>
+                  <DetailRow label="Weeks">{detailsRow.weeks}</DetailRow>
+                 
+                </dl>
+              </section>
+
+              <section>
+                <h3 className="mb-1 text-xs font-semibold uppercase text-muted-foreground">Hall</h3>
+                <dl className="divide-y">
+                  <DetailRow label="Name">{detailsRow.hall?.name}</DetailRow>
+                  <DetailRow label="Capacity">{detailsRow.hall?.capacity}</DetailRow>
+                  <DetailRow label="Available">{yesNo(detailsRow.hall?.availability)}</DetailRow>
+                  <DetailRow label="Facilities">
+                    {detailsRow.hall?.facilities?.length ? (
+                      <span className="flex flex-wrap gap-1">
+                        {detailsRow.hall.facilities.map((f) => (
+                          <Badge key={f} variant="outline">{f}</Badge>
+                        ))}
+                      </span>
+                    ) : (
+                      '—'
+                    )}
+                  </DetailRow>
+                  <DetailRow label="Terms">
+                    {detailsRow.hall?.terms?.length ? (
+                      <ul className="list-disc ps-4">
+                        {detailsRow.hall.terms.map((term, i) => (
+                          <li key={term.id ?? i}>{term.termsText}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      '—'
+                    )}
+                  </DetailRow>
+            
+                </dl>
+              </section>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDetailsRow(null)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={postponeOpen} onOpenChange={setPostponeOpen}>
         <DialogContent>
