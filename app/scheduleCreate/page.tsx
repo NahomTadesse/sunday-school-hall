@@ -120,11 +120,7 @@ export default function ScheduleCreatePage() {
     }
 
     if (isRecurring) {
-      if (!recurrenceEndDate) {
-        toast.error('Please choose when the recurrence ends.');
-        return;
-      }
-      if (recurrenceEndDate < (endDate || startDate)) {
+      if (recurrenceEndDate && recurrenceEndDate < (endDate || startDate)) {
         toast.error('The repeat-until date must not be before the end date.');
         return;
       }
@@ -160,7 +156,9 @@ export default function ScheduleCreatePage() {
                 ...base,
                 recurrenceType,
                 spanMode,
-                recurrenceEndDate: new Date(`${recurrenceEndDate}T23:59:59`).toISOString(),
+                ...(recurrenceEndDate
+                  ? { recurrenceEndDate: new Date(`${recurrenceEndDate}T23:59:59`).toISOString() }
+                  : {}),
                 daysOfWeek: recurrenceType === 'WEEKLY' ? daysOfWeek : [],
               }
             : [{ ...base, recurrenceType: 'NONE' }]
@@ -282,7 +280,9 @@ export default function ScheduleCreatePage() {
               </div>
               {isRecurring && (
                 <div className="space-y-1.5">
-                  <Label htmlFor="recurrenceEndDate">Repeat until</Label>
+                  <Label htmlFor="recurrenceEndDate">
+                    Repeat until <span className="text-xs font-normal text-muted-foreground">(optional)</span>
+                  </Label>
                   <Input
                     id="recurrenceEndDate"
                     type="date"
@@ -292,7 +292,6 @@ export default function ScheduleCreatePage() {
                       setRecurrenceEndDate(e.target.value);
                       setRecurrenceEndTouched(true);
                     }}
-                    required
                   />
                 </div>
               )}
