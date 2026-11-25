@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -98,14 +99,11 @@ export default function ScheduleCreatePage() {
       return;
     }
 
-    // End date/time are optional, but if one is given the other is needed too.
-    if (!!endDate !== !!endTime) {
-      toast.error('Fill in both the end date and the end time, or leave both empty.');
-      return;
-    }
-    const hasEnd = !!endDate && !!endTime;
+    // End date and end time are both optional and independent of each other.
+    const hasEndDate = !!endDate;
+    const hasEndTime = !!endTime;
 
-    if (hasEnd) {
+    if (hasEndDate && hasEndTime) {
       const rangeError = validateRange(
         startDate,
         startTime,
@@ -117,6 +115,15 @@ export default function ScheduleCreatePage() {
         toast.error(rangeError);
         return;
       }
+    } else if (hasEndTime) {
+      // No end date: the end time applies to the start date, so it must be later than the start time
+      if (endTime <= startTime) {
+        toast.error('End time must be after the start time.');
+        return;
+      }
+    } else if (hasEndDate && endDate < startDate) {
+      toast.error('End date must not be before the start date.');
+      return;
     }
 
     if (isRecurring) {
@@ -136,8 +143,9 @@ export default function ScheduleCreatePage() {
     // Date and time are sent separately: startDate/endDate = "YYYY-MM-DD", startTime/endTime = "HH:mm:ss".
     const base: ScheduleRequestPayload = {
       startDate,
-      ...(hasEnd ? { endDate, endTime: toApiTime(endTime) } : {}),
       startTime: toApiTime(startTime),
+      ...(hasEndDate ? { endDate } : {}),
+      ...(hasEndTime ? { endTime: toApiTime(endTime) } : {}),
       purpose,
       requirements,
       hallId,

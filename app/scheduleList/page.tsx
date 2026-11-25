@@ -226,10 +226,10 @@ export default function ScheduleListPage() {
       toast.error('Please fill in all required fields.');
       return;
     }
-    if (!!editEndDate !== !!editEndTime) {
-      toast.error('Fill in both the end date and the end time, or leave both empty.');
-      return;
-    }
+    // if (!!editEndDate !== !!editEndTime) {
+    //   toast.error('Fill in both the end date and the end time, or leave both empty.');
+    //   return;
+    // }
     const hasEnd = !!editEndDate && !!editEndTime;
     if (hasEnd) {
       const rangeError = validateRange(editStartDate, editStartTime, editEndDate, editEndTime);
